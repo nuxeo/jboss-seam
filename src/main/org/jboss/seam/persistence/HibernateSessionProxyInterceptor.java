@@ -3,6 +3,8 @@ package org.jboss.seam.persistence;
 import static org.jboss.seam.ComponentType.STATEFUL_SESSION_BEAN;
 import static org.jboss.seam.ComponentType.STATELESS_SESSION_BEAN;
 
+import java.lang.reflect.Proxy;
+
 import javax.annotation.PostConstruct;
 
 import org.hibernate.Session;
@@ -16,7 +18,7 @@ import org.jboss.seam.util.Reflections;
 
 /**
  * Proxy the Hibernate Session if injected using @PersistenceContext
- * 
+ *
  * @author Pete Muir
  *
  */
@@ -25,12 +27,18 @@ import org.jboss.seam.util.Reflections;
 public class HibernateSessionProxyInterceptor extends AbstractInterceptor
 {
 
-   @AroundInvoke
+   /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
+
+@Override
+@AroundInvoke
    public Object aroundInvoke(InvocationContext ic) throws Exception
    {
       return ic.proceed();
    }
-   
+
    @PostActivate
    public void postActivate(InvocationContext invocation) throws Exception
    {
@@ -38,29 +46,30 @@ public class HibernateSessionProxyInterceptor extends AbstractInterceptor
       proxyPersistenceContexts(invocation.getTarget());
       invocation.proceed();
    }
-   
+
    @PostConstruct
    public void postConstruct(InvocationContext invocation) throws Exception
    {
       proxyPersistenceContexts(invocation.getTarget());
       invocation.proceed();
    }
-   
-   
+
+
    private void proxyPersistenceContexts(Object bean)
    {
       //wrap any @PersistenceContext attributes in our proxy
       for ( BijectedAttribute ba: getComponent().getPersistenceContextAttributes() )
       {
          Object object = ba.get(bean);
-         if ( ! ( object instanceof HibernateSessionProxy) && object instanceof Session)
+         if ( object instanceof Session && ! Proxy.isProxyClass(object.getClass()))
          {
             ba.set( bean, HibernatePersistenceProvider.proxySession( (Session) object ) );
          }
       }
    }
-   
-   public boolean isInterceptorEnabled()
+
+   @Override
+public boolean isInterceptorEnabled()
    {
       return (getComponent().getType()==STATEFUL_SESSION_BEAN || getComponent().getType()==STATELESS_SESSION_BEAN) && Reflections.isClassAvailable("org.hibernate.Session");
    }

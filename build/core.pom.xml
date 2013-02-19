@@ -15,12 +15,7 @@
   <!-- See parent pom for notes on how to declare dependencies -->
 
   <dependencies>
-    <dependency>
-      <groupId>org.hibernate</groupId>
-      <artifactId>hibernate</artifactId>
-      <optional>true</optional>
-    </dependency>
-    
+
    <!-- Maven's "nearest" dependency resolution doesn't take into account parent dependency management! -->
    <dependency>
       <groupId>commons-logging</groupId>
@@ -28,10 +23,9 @@
       <optional>true</optional>
    </dependency>
     
-
     <dependency>
       <groupId>org.hibernate</groupId>
-      <artifactId>hibernate-annotations</artifactId>
+      <artifactId>hibernate-core</artifactId>
       <optional>true</optional>
     </dependency>
 
@@ -54,9 +48,8 @@
     </dependency>
 
     <dependency>
-      <groupId>javassist</groupId>
+      <groupId>org.javassist</groupId>
       <artifactId>javassist</artifactId>
-      <scope>provided</scope>
     </dependency>
     
     <dependency>
@@ -257,6 +250,7 @@
     <dependency>
       <groupId>org.testng</groupId>
       <artifactId>testng</artifactId>
+      <classifier>jdk15</classifier>
       <version>5.6</version>
       <optional>true</optional>
       <exclusions>

@@ -48,9 +48,8 @@
     </dependency>
 
     <dependency>
-      <groupId>javassist</groupId>
+      <groupId>org.javassist</groupId>
       <artifactId>javassist</artifactId>
-      <scope>provided</scope>
     </dependency>
 
    <!-- Microcontainer stuff isn't done -->
@@ -81,16 +80,18 @@
     
     -->
 
+<!--
     <dependency>
       <groupId>javax.persistence</groupId>
       <artifactId>persistence-api</artifactId>
       <optional>true</optional>
       <scope>provided</scope>
     </dependency>
+-->
 
     <dependency>
       <groupId>org.hibernate</groupId>
-      <artifactId>hibernate</artifactId>
+      <artifactId>hibernate-core</artifactId>
       <optional>true</optional>
     </dependency>
 

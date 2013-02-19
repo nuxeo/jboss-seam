@@ -274,12 +274,9 @@
 	</target>
 
 	<target name="compileioc" depends="initioc, select-compiler">
-		<javac source="1.5" target="1.5" destdir="${classes.ioc.dir}" srcdir="${src.ioc.dir}" debug="${javac.debug}" deprecation="${javac.deprecation}" nowarn="on">
-			<classpath>
-				<path refid="compile.ioc.path" />
-			</classpath>
+		<compile classesdir="${classes.ioc.dir}" srcdir="${src.ioc.dir}" classpath="compile.ioc.path" >
 			<exclude name="org/jboss/seam/ioc/microcontainer/**/*" />
-		</javac>
+		</compile>
 	</target>
 
 	<target name="jarioc" depends="compileioc" description="Build the distribution .jar file for the IOC package">
@@ -928,7 +925,7 @@
 		<attribute name="classpath" />
 		<element name="javac.nested" optional="true" implicit="true"/>
 		<sequential>
-			<javac source="1.5" target="1.5" destdir="@{classesdir}" debug="${javac.debug}" deprecation="${javac.deprecation}" nowarn="on" srcdir="@{srcdir}" classpathref="@{classpath}" >
+			<javac source="1.6" target="1.6" destdir="@{classesdir}" debug="${javac.debug}" deprecation="${javac.deprecation}" nowarn="on" srcdir="@{srcdir}" classpathref="@{classpath}" >
 				<javac.nested />
 			</javac>
 		</sequential>
@@ -986,7 +983,7 @@
 		<sequential>
 			<pomfile name="ui.pom" value="${build.dir}/ui.pom.xml" tofile="${ui.dir}/pom.xml" />
 			<maven target="@{target}" basedir="${ui.dir}" />
-			<delete file="${ui.dir}/pom.xml" />
+			<!--delete file="${ui.dir}/pom.xml" /-->
 		</sequential>
 	</macrodef>
 

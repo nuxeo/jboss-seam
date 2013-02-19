@@ -1,0 +1,5 @@
+.classpath
+classes/
+lib/
+ui/
+src/main/org/jboss/seam/text/

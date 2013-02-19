@@ -14,7 +14,7 @@ import java.util.Queue;
 import java.util.Set;
 
 import org.dom4j.Element;
-import org.hibernate.collection.PersistentCollection;
+import org.hibernate.collection.spi.PersistentCollection;
 
 /**
  * Wrapper for collections, arrays, etc.
@@ -29,7 +29,8 @@ public class BagWrapper extends BaseWrapper implements Wrapper
   private static final byte[] ELEMENT_TAG_OPEN = "<element>".getBytes();
   private static final byte[] ELEMENT_TAG_CLOSE = "</element>".getBytes();
 
-  public void marshal(OutputStream out) throws IOException
+  @Override
+public void marshal(OutputStream out) throws IOException
   {
     out.write(BAG_TAG_OPEN);
 
@@ -49,14 +50,16 @@ public class BagWrapper extends BaseWrapper implements Wrapper
     if (value.getClass().isArray())
     {
       vals = new ArrayList();
-      for (int i = 0; i < Array.getLength(value); i++)
+      for (int i = 0; i < Array.getLength(value); i++) {
         vals.add(Array.get(value, i));
     }
-    else if (Collection.class.isAssignableFrom(value.getClass()))
-      vals = (Collection) value;
-    else
-      throw new RuntimeException(String.format(
-        "Can not marshal object as bag: [%s]", value));
+    }
+    else if (Collection.class.isAssignableFrom(value.getClass())) {
+        vals = (Collection) value;
+    } else {
+        throw new RuntimeException(String.format(
+            "Can not marshal object as bag: [%s]", value));
+    }
 
     for (Object val : vals)
     {
@@ -68,22 +71,25 @@ public class BagWrapper extends BaseWrapper implements Wrapper
     out.write(BAG_TAG_CLOSE);
   }
 
-  @SuppressWarnings("unchecked")
+  @Override
+@SuppressWarnings("unchecked")
   public Object convert(Type type)
       throws ConversionException
   {
     // First convert the elements in the bag to a List of Wrappers
     List<Wrapper> vals = new ArrayList<Wrapper>();
 
-    for (Element e : (List<Element>) element.elements("element"))
-      vals.add(context.createWrapperFromElement((Element) e.elements().get(0)));
+    for (Element e : (List<Element>) element.elements("element")) {
+        vals.add(context.createWrapperFromElement((Element) e.elements().get(0)));
+    }
 
     if (type instanceof Class && ((Class) type).isArray())
     {
       Class arrayType = ((Class) type).getComponentType();
       value = Array.newInstance(arrayType, vals.size()); // Fix this
-      for (int i = 0; i < vals.size(); i++)
+      for (int i = 0; i < vals.size(); i++) {
         Array.set(value, i, vals.get(i).convert(arrayType));
+    }
     }
     else if (type instanceof Class && Collection.class.isAssignableFrom((Class) type))
     {
@@ -94,8 +100,9 @@ public class BagWrapper extends BaseWrapper implements Wrapper
         throw new ConversionException(String.format(
             "Could not create instance of target type [%s].", type));
       }
-      for (Wrapper w : vals)
+      for (Wrapper w : vals) {
         ((Collection) value).add(w.convert(Object.class));
+    }
     }
     else if (type instanceof ParameterizedType &&
              Collection.class.isAssignableFrom((Class) ((ParameterizedType) type).getRawType()))
@@ -117,8 +124,9 @@ public class BagWrapper extends BaseWrapper implements Wrapper
             "Could not create instance of target type [%s].", rawType));
       }
 
-      for (Wrapper w : vals)
+      for (Wrapper w : vals) {
         ((Collection) value).add(w.convert(genType));
+    }
     }
 
     return value;
@@ -129,15 +137,16 @@ public class BagWrapper extends BaseWrapper implements Wrapper
     if (c.isInterface())
     {
       // Support Set, Queue and (by default, and as a last resort) List
-      if (Set.class.isAssignableFrom(c))
+      if (Set.class.isAssignableFrom(c)) {
         return HashSet.class;
-      else if (Queue.class.isAssignableFrom(c))
+    } else if (Queue.class.isAssignableFrom(c)) {
         return LinkedList.class;
-      else
+    } else {
         return ArrayList.class;
     }
-    else
-      return c;
+    } else {
+        return c;
+    }
   }
 
   /**
@@ -145,19 +154,23 @@ public class BagWrapper extends BaseWrapper implements Wrapper
    * @param cls Class
    * @return ConversionScore
    */
-  public ConversionScore conversionScore(Class cls)
+  @Override
+public ConversionScore conversionScore(Class cls)
   {
     // There's no such thing as an exact match for a bag, so we'll just look for
     // a compatible match
 
-    if (cls.isArray())
-      return ConversionScore.compatible;
+    if (cls.isArray()) {
+        return ConversionScore.compatible;
+    }
 
-    if (cls.equals(Object.class))
-      return ConversionScore.compatible;
+    if (cls.equals(Object.class)) {
+        return ConversionScore.compatible;
+    }
 
-    if (Collection.class.isAssignableFrom(cls))
-      return ConversionScore.compatible;
+    if (Collection.class.isAssignableFrom(cls)) {
+        return ConversionScore.compatible;
+    }
 
     return ConversionScore.nomatch;
   }

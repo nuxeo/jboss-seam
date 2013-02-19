@@ -4,9 +4,8 @@ import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
+import javassist.util.proxy.ProxyFactory;
 import javassist.util.proxy.ProxyObject;
-
-import org.jboss.seam.util.ProxyFactory;
 
 /**
  * Utilitilies relating to a MetaModel
@@ -15,7 +14,7 @@ import org.jboss.seam.util.ProxyFactory;
  */
 public class MetaModelUtils
 {
-   
+
    public static String toName(String name, Method method)
    {
       //TODO: does not handle "isFoo"
@@ -35,7 +34,7 @@ public class MetaModelUtils
       }
       return name;
    }
-   
+
    public static Class<ProxyObject> createProxyFactory(final Class beanClass)
    {
       ProxyFactory factory = new ProxyFactory();

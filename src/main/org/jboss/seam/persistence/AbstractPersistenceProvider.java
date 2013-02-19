@@ -1,5 +1,6 @@
 package org.jboss.seam.persistence;
 
+import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.Date;
 
@@ -11,9 +12,9 @@ import org.jboss.seam.Entity;
 
 /**
  * Provides a default implementation of PersistenceProvider methods where possible
- * 
+ *
  * Other methods must be implemented
- * 
+ *
  * @author Pete Muir
  *
  */
@@ -30,14 +31,14 @@ public abstract class AbstractPersistenceProvider
     * Does the persistence context have unflushed changes? If
     * it does not, persistence context replication can be
     * optimized.
-    * 
+    *
     * @return true to indicate that there are unflushed changes
     */
    public abstract boolean isDirty(EntityManager entityManager);
 
    /**
     * Get the value of the entity identifier attribute.
-    * 
+    *
     * @param bean a managed entity instance
     */
    public Object getId(Object bean, EntityManager entityManager)
@@ -47,10 +48,10 @@ public abstract class AbstractPersistenceProvider
 
    /**
     * Get the name of the entity
-    * 
+    *
     * @param bean
     * @param entityManager
-    * 
+    *
     * @throws IllegalArgumentException if the passed object is not an entity
     */
    public String getName(Object bean, EntityManager entityManager) throws IllegalArgumentException
@@ -60,7 +61,7 @@ public abstract class AbstractPersistenceProvider
 
    /**
     * Get the value of the entity version attribute.
-    * 
+    *
     * @param bean a managed entity instance
     */
    public Object getVersion(Object bean, EntityManager entityManager)
@@ -88,7 +89,7 @@ public abstract class AbstractPersistenceProvider
    /**
     * Enable a Filter. This is here just especially for Hibernate,
     * since we well know that other products don't have such cool
-    * features. 
+    * features.
     */
    public abstract void enableFilter(Filter filter, EntityManager entityManager);
 
@@ -110,12 +111,12 @@ public abstract class AbstractPersistenceProvider
     */
    public EntityManager proxyEntityManager(EntityManager entityManager)
    {
-      return new EntityManagerProxy(entityManager);
+      return HibernateInstanceHandler.newProxy(entityManager);
    }
 
    /**
     * Returns the class of an entity bean instance
-    * 
+    *
     * @param bean The entity bean instance
     * @return The class of the entity bean
     */
@@ -126,7 +127,7 @@ public abstract class AbstractPersistenceProvider
 
    public Method getPostLoadMethod(Class beanClass, EntityManager entityManager)
    {
-      return Entity.forClass(beanClass).getPostLoadMethod();      
+      return Entity.forClass(beanClass).getPostLoadMethod();
    }
 
    public Method getPrePersistMethod(Class beanClass, EntityManager entityManager)

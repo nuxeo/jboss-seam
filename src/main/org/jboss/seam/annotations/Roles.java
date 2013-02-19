@@ -15,13 +15,13 @@ import java.lang.annotation.Target;
 
 /**
  * Specifies the roles of a component.
- * 
- * @author César Izurieta
+ *
+ * @author Cesar Izurieta
  */
 @Target(TYPE)
 @Retention(RUNTIME)
 @Documented
-public @interface Roles 
+public @interface Roles
 {
    Role[] value();
 }
