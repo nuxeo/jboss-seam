@@ -40,7 +40,7 @@ import org.jboss.seam.webservice.WSSecurityInterceptor;
 
 /**
  * A Seam component that holds Seam configuration settings
- * 
+ *
  * @author Gavin King
  */
 @Scope(ScopeType.APPLICATION)
@@ -49,60 +49,60 @@ import org.jboss.seam.webservice.WSSecurityInterceptor;
 @Install(value=false, precedence=BUILT_IN)
 public class Init
 {
-   
+
    public static List<String> DEFAULT_INTERCEPTORS = new ArrayList<String>(Arrays.asList(
          SynchronizationInterceptor.class.getName(),
          AsynchronousInterceptor.class.getName(),
          RemoveInterceptor.class.getName(),
          HibernateSessionProxyInterceptor.class.getName(),
-         EntityManagerProxyInterceptor.class.getName(),
+//         EntityManagerProxyInterceptor.class.getName(),
          MethodContextInterceptor.class.getName(),
          EventInterceptor.class.getName(),
          ConversationalInterceptor.class.getName(),
-         BusinessProcessInterceptor.class.getName(),
+//         BusinessProcessInterceptor.class.getName(),
          ConversationInterceptor.class.getName(),
          BijectionInterceptor.class.getName(),
          RollbackInterceptor.class.getName(),
-         TransactionInterceptor.class.getName(),
-         WSSecurityInterceptor.class.getName(),
-         SecurityInterceptor.class.getName()
-         )); 
-   
+         TransactionInterceptor.class.getName()
+//         WSSecurityInterceptor.class.getName(),
+//         SecurityInterceptor.class.getName()
+         ));
+
    private LogProvider log = Logging.getLogProvider(Init.class);
-   
+
    private Namespace rootNamespace = new Namespace(null);
-   
+
    private Collection<Namespace> globalImports = new ArrayList<Namespace>();
-   
+
    //private boolean isClientSideConversations = false;
    private boolean jbpmInstalled;
    private String jndiPattern;
    private boolean debug;
    private boolean myFacesLifecycleBug;
    private boolean transactionManagementEnabled = true;
-   
+
    private List<String> interceptors = new ArrayList<String>(DEFAULT_INTERCEPTORS);
-   
+
    private Map<String, List<ObserverMethod>> observerMethods = new HashMap<String, List<ObserverMethod>>();
    private Map<String, List<ObserverMethodExpression>> observerMethodBindings = new HashMap<String, List<ObserverMethodExpression>>();
    private Map<String, FactoryMethod> factories = new HashMap<String, FactoryMethod>();
    private Map<String, FactoryExpression> factoryMethodExpressions = new HashMap<String, FactoryExpression>();
    private Map<String, FactoryExpression> factoryValueExpressions = new HashMap<String, FactoryExpression>();
-   
+
    private Set<String> autocreateVariables = new HashSet<String>();
    private Set<String> installedFilters = new HashSet<String>();
    private Set<String> resourceProviders = new HashSet<String>();
    private Set<String> permissionResolvers = new HashSet<String>();
-   
+
    private Set<String> hotDeployableComponents = new HashSet<String>();
-   
+
    private Map<String, String> converters = new HashMap<String, String>();
    private Map<String, String> validators = new HashMap<String, String>();
    private Map<Class, String> convertersByClass = new HashMap<Class, String>();
-   
+
    private long timestamp;
    private File[] hotDeployPaths;
-   
+
    public static Init instance()
    {
       if ( !Contexts.isApplicationContextActive() )
@@ -117,7 +117,7 @@ public class Init
       }*/
       return init;
    }
-   
+
    /*public boolean isClientSideConversations()
    {
       return isClientSideConversations;
@@ -127,19 +127,19 @@ public class Init
    {
       this.isClientSideConversations = isClientSideConversations;
    }*/
-   
+
    public static class FactoryMethod {
        private Method method;
        private Component component;
        private ScopeType scope;
-      
-	   FactoryMethod(Method method, Component component)
-	   {
-	       this.method = method;
+
+       FactoryMethod(Method method, Component component)
+       {
+           this.method = method;
            this.component = component;
            scope = method.getAnnotation(org.jboss.seam.annotations.Factory.class).scope();
-	   }
-      
+       }
+
       public ScopeType getScope()
       {
          return scope;
@@ -158,18 +158,18 @@ public class Init
          return "FactoryMethod(" + method + ')';
       }
    }
-   
-   public static class FactoryExpression 
+
+   public static class FactoryExpression
    {
       private String expression;
       private ScopeType scope;
-      
+
       FactoryExpression(String expression, ScopeType scope)
       {
          this.expression = expression;
          this.scope = scope;
       }
-      
+
       public MethodExpression getMethodBinding()
       {
          //TODO: figure out some way to cache this!!
@@ -190,22 +190,22 @@ public class Init
          return "FactoryBinding(" + expression + ')';
       }
    }
-   
+
    public FactoryMethod getFactory(String variable)
    {
       return factories.get(variable);
    }
-   
+
    public FactoryExpression getFactoryMethodExpression(String variable)
    {
       return factoryMethodExpressions.get(variable);
    }
-   
+
    public FactoryExpression getFactoryValueExpression(String variable)
    {
       return factoryValueExpressions.get(variable);
    }
-   
+
    private void checkDuplicateFactory(String variable)
    {
       if ( factories.containsKey(variable) )
@@ -214,7 +214,7 @@ public class Init
       }
       checkDuplicateFactoryExpressions(variable);
    }
-   
+
    private void checkDuplicateFactoryExpressions(String variable)
    {
        if ( factoryMethodExpressions.containsKey(variable) || factoryValueExpressions.containsKey(variable) )
@@ -222,7 +222,7 @@ public class Init
            throw new IllegalStateException("duplicate factory for: " + variable + " (duplicate is specified in components.xml)");
        }
    }
-   
+
    private void checkDuplicateFactory(String variable, Component component)
    {
        if (factories.containsKey(variable))
@@ -236,34 +236,34 @@ public class Init
        }
        checkDuplicateFactoryExpressions(variable);
    }
-   
-   
-   /** 
+
+
+   /**
     * makes sure appropriate namespaces exist for a name.  isComponent indicates the
-    * name is for a component type, in which case we don't create a namespace for the 
+    * name is for a component type, in which case we don't create a namespace for the
     * last part
     */
    public Namespace initNamespaceForName(String name, boolean isComponent) {
        Namespace namespace = getRootNamespace();
-       
+
        StringTokenizer tokens = new StringTokenizer(name, ".");
        while (tokens.hasMoreTokens()) {
            String token = tokens.nextToken();
 
            if (tokens.hasMoreTokens() || !isComponent) {
                //we don't want to create a namespace for a componentName
-               namespace = namespace.getOrCreateChild(token);               
+               namespace = namespace.getOrCreateChild(token);
            }
        }
 
        return namespace;
    }
-   
+
    public void addFactoryMethod(String variable, Method method, Component component)
    {
        checkDuplicateFactory(variable, component);
-	   factories.put(variable, new FactoryMethod(method, component));
-	   initNamespaceForName(variable, true);
+       factories.put(variable, new FactoryMethod(method, component));
+       initNamespaceForName(variable, true);
    }
 
    public void addFactoryMethodExpression(String variable, String methodBindingExpression, ScopeType scope)
@@ -272,7 +272,7 @@ public class Init
       factoryMethodExpressions.put(variable, new FactoryExpression(methodBindingExpression, scope));
       initNamespaceForName(variable, true);
    }
-   
+
    public void addFactoryValueExpression(String variable, String valueBindingExpression, ScopeType scope)
    {
       checkDuplicateFactory(variable);
@@ -280,13 +280,13 @@ public class Init
       initNamespaceForName(variable, true);
 
    }
-   
-   public static class ObserverMethod 
+
+   public static class ObserverMethod
    {
       private Method method;
       private Component component;
       private boolean create;
-      
+
       ObserverMethod(Method method, Component component, boolean create)
       {
          this.method = method;
@@ -314,23 +314,23 @@ public class Init
       {
          return "ObserverMethod(" + method + ')';
       }
-      
+
       @Override
       public boolean equals(Object obj)
       {
          if (!(obj instanceof ObserverMethod)) return false;
-           
+
          ObserverMethod other = (ObserverMethod) obj;
          return this.component.equals(other.component) &&
            Arrays.equals(this.method.getParameterTypes(), other.method.getParameterTypes()) &&
-           this.method.getName().equals(other.getMethod().getName());         
+           this.method.getName().equals(other.getMethod().getName());
       }
    }
-   
+
    public static class ObserverMethodExpression
    {
       private MethodExpression methodBinding;
-      
+
       ObserverMethodExpression(MethodExpression method)
       {
          this.methodBinding = method;
@@ -347,17 +347,17 @@ public class Init
          return "ObserverMethodBinding(" + methodBinding + ')';
       }
    }
-   
+
    public List<ObserverMethod> getObserverMethods(String eventType)
    {
       return observerMethods.get(eventType);
    }
-   
+
    public List<ObserverMethodExpression> getObserverMethodExpressions(String eventType)
    {
       return observerMethodBindings.get(eventType);
    }
-   
+
    public void addObserverMethod(String eventType, Method method, Component component, boolean create)
    {
       List<ObserverMethod> observerList = observerMethods.get(eventType);
@@ -366,14 +366,14 @@ public class Init
          observerList = new ArrayList<ObserverMethod>();
          observerMethods.put(eventType, observerList);
       }
-      
-      ObserverMethod observerMethod = new ObserverMethod(method, component, create); 
+
+      ObserverMethod observerMethod = new ObserverMethod(method, component, create);
       if (!observerList.contains(observerMethod))
       {
          observerList.add( observerMethod );
       }
    }
-   
+
    public void addObserverMethodExpression(String eventType, MethodExpression methodBinding)
    {
       List<ObserverMethodExpression> observerList = observerMethodBindings.get(eventType);
@@ -384,7 +384,7 @@ public class Init
       }
       observerList.add( new ObserverMethodExpression(methodBinding) );
    }
-   
+
    /**
     * Remove any observer methods registered on the component. Needed to clean
     * out old observer methods on hot deploy
@@ -406,20 +406,20 @@ public class Init
          observerMethods.get(eventType).removeAll(observerMethodsToRemove);
       }
    }
-   
+
    public boolean isJbpmInstalled()
    {
       return jbpmInstalled;
    }
-   
-   public String getJndiPattern() 
+
+   public String getJndiPattern()
    {
       return jndiPattern;
    }
-    
-   public void setJndiPattern(String jndiPattern) 
+
+   public void setJndiPattern(String jndiPattern)
    {
-	   this.jndiPattern = jndiPattern;
+       this.jndiPattern = jndiPattern;
    }
    public boolean isDebug()
    {
@@ -429,12 +429,12 @@ public class Init
    {
       this.debug = debug;
    }
-   
+
    public boolean isMyFacesLifecycleBug()
    {
       return myFacesLifecycleBug;
    }
-   
+
    public void setMyFacesLifecycleBug(boolean myFacesLifecycleBugExists)
    {
       this.myFacesLifecycleBug = myFacesLifecycleBugExists;
@@ -449,7 +449,7 @@ public class Init
    {
       return autocreateVariables.contains(name);
    }
-   
+
    public void addAutocreateVariable(String name)
    {
       autocreateVariables.add(name);
@@ -459,7 +459,7 @@ public class Init
    {
       return rootNamespace;
    }
-   
+
    public void importNamespace(String namespaceName)
    {
       Namespace namespace = getRootNamespace();
@@ -475,27 +475,27 @@ public class Init
    {
       installedFilters.add(name);
    }
-   
+
    public Set<String> getInstalledFilters()
    {
       return installedFilters;
    }
-   
+
    public void addResourceProvider(String name)
    {
       resourceProviders.add(name);
    }
-   
+
    public Set<String> getResourceProviders()
    {
       return resourceProviders;
    }
-   
+
    public void addPermissionResolver(String name)
    {
       permissionResolvers.add(name);
    }
-   
+
    public Set<String> getPermissionResolvers()
    {
       return permissionResolvers;
@@ -525,7 +525,7 @@ public class Init
    {
       return validators;
    }
-   
+
    public boolean hasHotDeployableComponents()
    {
       return hotDeployPaths!=null;
@@ -565,17 +565,17 @@ public class Init
    {
       return globalImports;
    }
-    
+
    public List<String> getInterceptors()
    {
       return interceptors;
    }
-    
+
    public void setInterceptors(List<String> interceptors)
    {
       this.interceptors = interceptors;
    }
-   
+
    /**
     * Sanity check to warn users if they have disabled core interceptors
     */
@@ -589,5 +589,5 @@ public class Init
          }
       }
    }
-   
+
 }
