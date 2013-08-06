@@ -1,0 +1,15 @@
+
+Custom Seam build for Nuxeo
+
+See https://jira.nuxeo.com/browse/NXP-12207 for more details 
+
+
+## Build eclipse project 
+
+      mvn  -f build/core.pom.xml  --settings build/ci.settings.xml  eclipse:eclipse
+
+## Build Seam Core
+
+      ant build
+
+
