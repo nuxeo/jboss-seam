@@ -146,7 +146,7 @@ under the License.
        <id>fake.mirror.of.central</id>
        <mirrorOf>central</mirrorOf>
        <name>Fake mirror of central - reroutes central to repository.jboss.org</name>
-       <url>http://repository.jboss.org/maven2</url>
+       <url>http://repository.jboss.org/nexus/content/groups/public-jboss</url>
      </mirror>
   </mirrors>
   

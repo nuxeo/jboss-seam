@@ -167,7 +167,10 @@
 		<delete dir="${lib.dir}" quiet="${quietclean}" />
 	</target>
 
+       <!-- 
 	<target name="build" depends="jarcore,jarexcel,jarrss,jarpdf,jarioc,jarmail,jarremoting,jardebug,jargen,jarui,jarwicket, jarjul, jarresteasy" description="Build all distribution .jar files" />
+       -->
+	<target name="build" depends="jarcore" description="Build Seam Core .jar files" />
 
 	<target name="select-compiler">
 		<available classname="org.eclipse.jdt.core.JDTCompilerAdapter" property="build.compiler" value="org.eclipse.jdt.core.JDTCompilerAdapter" />
