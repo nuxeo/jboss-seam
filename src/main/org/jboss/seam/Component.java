@@ -95,6 +95,7 @@ import org.jboss.seam.core.Init;
 import org.jboss.seam.core.Mutable;
 import org.jboss.seam.core.Expressions.MethodExpression;
 import org.jboss.seam.core.Expressions.ValueExpression;
+import org.jboss.seam.core.providers.ServiceProvider;
 import org.jboss.seam.databinding.DataBinder;
 import org.jboss.seam.databinding.DataSelector;
 import org.jboss.seam.ejb.SeamInterceptor;
@@ -115,12 +116,12 @@ import org.jboss.seam.web.Parameters;
 
 /**
  * Metamodel class for component classes.
- * 
+ *
  * A Seam component is any class with a @Name annotation.
  *
  * @author Thomas Heute
  * @author Gavin King
- * 
+ *
  */
 @Scope(ScopeType.APPLICATION)
 @SuppressWarnings("deprecation")
@@ -129,7 +130,7 @@ public class Component extends Model
    public static final String PROPERTIES = "org.jboss.seam.properties";
 
    private static final LogProvider log = Logging.getLogProvider(Component.class);
-   
+
    private ComponentType type;
    private String name;
    private ScopeType scope;
@@ -147,7 +148,7 @@ public class Component extends Model
    private Method createMethod;
    private Method unwrapMethod;
    private Method defaultRemoveMethod;
-   
+
    //TODO: check the EJB3 spec, I think you
    //      are allowed to have multiple
    //      lifecycle methods on a bean!
@@ -155,18 +156,18 @@ public class Component extends Model
    private Method postConstructMethod;
    private Method prePassivateMethod;
    private Method postActivateMethod;
-   
+
    private Map<String, Method> removeMethods = new HashMap<String, Method>();
    private Set<Method> lifecycleMethods = new HashSet<Method>();
    private Set<Method> conversationManagementMethods = new HashSet<Method>();
-   
+
    private List<BijectedAttribute<In>> inAttributes = new ArrayList<BijectedAttribute<In>>();
    private List<BijectedAttribute<Out>> outAttributes = new ArrayList<BijectedAttribute<Out>>();
    private List<BijectedAttribute> parameterSetters = new ArrayList<BijectedAttribute>();
    private List<BijectedAttribute> dataModelGetters = new ArrayList<BijectedAttribute>();
    private List<BijectedAttribute> pcAttributes = new ArrayList<BijectedAttribute>();
    private Map<String, BijectedAttribute> dataModelSelectionSetters = new HashMap<String, BijectedAttribute>();
-   
+
    private List<Interceptor> interceptors = new ArrayList<Interceptor>();
    private List<Interceptor> clientSideInterceptors = new ArrayList<Interceptor>();
 
@@ -175,10 +176,10 @@ public class Component extends Model
 
    private List<Field> logFields = new ArrayList<Field>();
    private List<org.jboss.seam.log.Log> logInstances = new ArrayList<org.jboss.seam.log.Log>();
-   
+
    private Collection<Namespace> imports = new ArrayList<Namespace>();
    private Namespace namespace;
-   
+
    private boolean perNestedConversation;
 
    private Class<ProxyObject> factory;
@@ -209,7 +210,7 @@ public class Component extends Model
    private Component(Class<?> beanClass, String componentName, ScopeType componentScope, boolean startup, String[] dependencies, String componentJndiName, Context applicationContext)
    {
       super(beanClass);
-      
+
       name = componentName;
       scope = componentScope;
       this.startup = startup;
@@ -217,10 +218,10 @@ public class Component extends Model
       type = Seam.getComponentType( getBeanClass() );
       interceptionEnabled = Seam.isInterceptionEnabled( getBeanClass() );
       perNestedConversation = hasAnnotation(getBeanClass(), PerNestedConversation.class);
-      
-      checkName();  
+
+      checkName();
       checkNonabstract();
-      
+
       initNamespace(componentName, applicationContext);
       initImports(applicationContext);
       initSynchronize();
@@ -253,7 +254,7 @@ public class Component extends Model
       }
 
       initInitializers(applicationContext);
-      
+
       registerConverterOrValidator(applicationContext);
 
    }
@@ -299,24 +300,24 @@ public class Component extends Model
 
    private void initSynchronize()
    {
-      boolean hasAnnotation = getBeanClass().isAnnotationPresent(Synchronized.class); 
-      
+      boolean hasAnnotation = getBeanClass().isAnnotationPresent(Synchronized.class);
+
       synchronize = ( scope==SESSION /*&& ! beanClass.isAnnotationPresent(ReadOnly.class)*/ ) ||
             hasAnnotation;
-            
+
       if (synchronize)
       {
          timeout = getBeanClass().isAnnotationPresent(Synchronized.class) ?
                getBeanClass().getAnnotation(Synchronized.class).timeout() :
                Synchronized.DEFAULT_TIMEOUT;
       }
-      
+
       if (hasAnnotation && !interceptionEnabled)
       {
          log.warn("Interceptors are disabled for @Synchronized component - synchronization will be disabled for: " + name);
       }
    }
-   
+
    private void registerConverterOrValidator(Context applicationContext)
    {
       if (applicationContext!=null) //for unit tests!
@@ -327,9 +328,9 @@ public class Component extends Model
             if ( getBeanClass().isAnnotationPresent(Converter.class) )
             {
                if(!getBeanClass().isAnnotationPresent(BypassInterceptors.class))
-                  throw new IllegalStateException("Converter " + getBeanClass().getName() 
+                  throw new IllegalStateException("Converter " + getBeanClass().getName()
                         + " must be annotated with @BypassInterceptors");
-               
+
                Converter converter = getBeanClass().getAnnotation(Converter.class);
                if ( converter.forClass()!=void.class )
                {
@@ -341,7 +342,7 @@ public class Component extends Model
             if ( getBeanClass().isAnnotationPresent(Validator.class) )
             {
                if(!getBeanClass().isAnnotationPresent(BypassInterceptors.class))
-                  throw new IllegalStateException("Validator " + getBeanClass().getName() 
+                  throw new IllegalStateException("Validator " + getBeanClass().getName()
                         + " must be annotated with @BypassInterceptors");
 
                Validator validator = getBeanClass().getAnnotation(Validator.class);
@@ -353,7 +354,7 @@ public class Component extends Model
    }
 
    private void initNamespace(String componentName, Context applicationContext)
-   {  
+   {
       if (applicationContext!=null) { //for unit tests!
          Init init = (Init) applicationContext.get(Seam.getComponentName(Init.class));
          if (init!=null) {
@@ -361,7 +362,7 @@ public class Component extends Model
          }
       }
    }
-   
+
    private void initImports(Context applicationContext)
    {
       if (applicationContext!=null) //for unit tests!
@@ -373,7 +374,7 @@ public class Component extends Model
             {
                addImport( init, getBeanClass().getAnnotation(Import.class) );
             }
-            
+
             Package pkg = getBeanClass().getPackage();
             if ( pkg!=null && pkg.isAnnotationPresent(Import.class) )
             {
@@ -407,9 +408,9 @@ public class Component extends Model
       if ( scope!=STATELESS && type==MESSAGE_DRIVEN_BEAN )
       {
          throw new IllegalArgumentException("Message-driven beans must be bound to STATELESS context: " + name);
-      }      
+      }
    }
-   
+
    protected void checkSynchronizedForComponentType()
    {
       if (scope==STATELESS && synchronize)
@@ -417,7 +418,7 @@ public class Component extends Model
          throw new IllegalArgumentException("@Synchronized not meaningful for stateless components: " + name);
       }
    }
-   
+
    private void checkSerializableForComponentType()
    {
       boolean serializableScope = scope==PAGE || scope==SESSION || scope==CONVERSATION;
@@ -475,7 +476,7 @@ public class Component extends Model
 
             String propertyName = key.substring( name.length()+1, key.length() );
             Method setterMethod = null;
-            try { 
+            try {
                 setterMethod = Reflections.getSetterMethod(getBeanClass(), propertyName);
             } catch (IllegalArgumentException e) {}
             if (setterMethod!=null)
@@ -554,7 +555,7 @@ public class Component extends Model
             scanField(selectionFields, dataModelNames, field);
          }
       }
-      
+
       final boolean hasMultipleDataModels = dataModelGetters.size() > 1;
       String defaultDataModelName = null;
       if ( !hasMultipleDataModels )
@@ -607,7 +608,7 @@ public class Component extends Model
             {
                throw new IllegalArgumentException("Stateful session bean component must have a method with no parameters marked @Remove: " + name);
             }
-            
+
             //check that it is unique
             boolean found = false;
             for ( Method remove: removeMethods.values() )
@@ -641,14 +642,14 @@ public class Component extends Model
          {
             throw new IllegalStateException("component has two @Destroy methods: " + name);
          }
-         
+
          if ( destroyMethod==null ) //ie. ignore the one on the superclass
          {
             destroyMethod = method;
             lifecycleMethods.add(method);
          }
       }
-      
+
       if ( method.isAnnotationPresent(REMOVE) )
       {
          removeMethods.put( method.getName(), method );
@@ -658,7 +659,7 @@ public class Component extends Model
             lifecycleMethods.add(method);
          }
       }
-      
+
       if ( method.isAnnotationPresent(Create.class) )
       {
          /*if ( method.getParameterTypes().length>0 ) and it doesn't take a Component parameter
@@ -679,25 +680,25 @@ public class Component extends Model
             lifecycleMethods.add(method);
          }
       }
-      
+
       if ( method.isAnnotationPresent(In.class) )
       {
          In in = method.getAnnotation(In.class);
          String name = toName( in.value(), method );
          inAttributes.add( new BijectedMethod(name, method, in) );
       }
-      
+
       if ( method.isAnnotationPresent(Out.class) )
       {
          Out out = method.getAnnotation(Out.class);
          String name = toName( out.value(), method );
          outAttributes.add( new BijectedMethod(name, method, out) );
-         
+
          //can't use Init.instance() here because of unit tests
          Init init = (Init) applicationContext.get(Seam.getComponentName(Init.class));
          init.initNamespaceForName(name, true);
       }
-      
+
       if ( method.isAnnotationPresent(Unwrap.class) )
       {
          if ( unwrapMethod!=null && !unwrapMethod.getName().equals( method.getName() )  )
@@ -709,35 +710,35 @@ public class Component extends Model
             unwrapMethod = method;
          }
       }
-      
+
       if ( method.isAnnotationPresent(DataModel.class) ) //TODO: generalize
       {
          checkDataModelScope( method.getAnnotation(DataModel.class) );
       }
-      
+
       if ( method.isAnnotationPresent(org.jboss.seam.annotations.Factory.class) )
       {
          //can't use Init.instance() here because of unit tests
          Init init = (Init) applicationContext.get(Seam.getComponentName(Init.class));
          String contextVariable = toName( method.getAnnotation(org.jboss.seam.annotations.Factory.class).value(), method );
-         
+
          if ( contextVariable.equals(name) )
          {
             throw new IllegalStateException("@Factory method can not share name with its containing component: " + contextVariable);
          }
-         
+
          init.addFactoryMethod(contextVariable, method, this);
          if ( method.getAnnotation(org.jboss.seam.annotations.Factory.class).autoCreate() )
          {
             init.addAutocreateVariable(contextVariable);
          }
       }
-      
+
       if ( method.isAnnotationPresent(Observer.class) )
       {
          //can't use Init.instance() here because of unit tests
          Init init = (Init) applicationContext.get(Seam.getComponentName(Init.class));
-          
+
          Observer observer = method.getAnnotation(Observer.class);
          for ( String eventType : observer.value() )
          {
@@ -745,53 +746,53 @@ public class Component extends Model
             init.addObserverMethod( eventType, method, this, observer.create() );
          }
       }
-      
+
       if ( method.isAnnotationPresent(RequestParameter.class) )
       {
          RequestParameter rp = method.getAnnotation(RequestParameter.class);
          String name = toName( rp.value(), method );
          parameterSetters.add( new BijectedMethod(name, method, rp) );
       }
-      
+
       if ( method.isAnnotationPresent(PRE_PASSIVATE) )
       {
          prePassivateMethod = method;
          lifecycleMethods.add(method);
       }
-      
+
       if ( method.isAnnotationPresent(POST_ACTIVATE) )
       {
          postActivateMethod = method;
          lifecycleMethods.add(method);
       }
-      
+
       if ( method.isAnnotationPresent(POST_CONSTRUCT) )
       {
          postConstructMethod = method;
          lifecycleMethods.add(method);
       }
-      
+
       if ( method.isAnnotationPresent(PRE_DESTROY) )
       {
          preDestroyMethod = method;
          lifecycleMethods.add(method);
       }
-      
+
       if ( method.isAnnotationPresent(PERSISTENCE_CONTEXT) )
       {
          checkPersistenceContextForComponentType();
          pcAttributes.add( new BijectedMethod( toName(null, method), method, null ) );
       }
-      
-      if ( method.isAnnotationPresent(Begin.class) || 
-           method.isAnnotationPresent(End.class) || 
+
+      if ( method.isAnnotationPresent(Begin.class) ||
+           method.isAnnotationPresent(End.class) ||
            method.isAnnotationPresent(StartTask.class) ||
            method.isAnnotationPresent(BeginTask.class) ||
-           method.isAnnotationPresent(EndTask.class) ) 
+           method.isAnnotationPresent(EndTask.class) )
       {
          conversationManagementMethods.add(method);
       }
-      
+
       for ( Annotation ann: method.getAnnotations() )
       {
          if ( ann.annotationType().isAnnotationPresent(DataBinderClass.class) )
@@ -825,26 +826,26 @@ public class Component extends Model
          String name = toName( in.value(), field );
          inAttributes.add( new BijectedField(name, field, in) );
       }
-      
+
       if ( field.isAnnotationPresent(Out.class) )
       {
          Out out = field.getAnnotation(Out.class);
          String name = toName( out.value(), field );
          outAttributes.add(new BijectedField(name, field, out) );
       }
-      
+
       if ( field.isAnnotationPresent(DataModel.class) ) //TODO: generalize
       {
          checkDataModelScope( field.getAnnotation(DataModel.class) );
       }
-      
+
       if ( field.isAnnotationPresent(RequestParameter.class) )
       {
          RequestParameter rp = field.getAnnotation(RequestParameter.class);
          String name = toName( rp.value(), field );
          parameterSetters.add( new BijectedField(name, field, rp) );
       }
-      
+
       if ( field.isAnnotationPresent(org.jboss.seam.annotations.Logger.class) )
       {
          String category = field.getAnnotation(org.jboss.seam.annotations.Logger.class).value();
@@ -867,13 +868,13 @@ public class Component extends Model
             logInstances.add(logInstance);
          }
       }
-      
+
       if ( field.isAnnotationPresent(PERSISTENCE_CONTEXT) )
       {
          checkPersistenceContextForComponentType();
          pcAttributes.add( new BijectedField( toName(null, field), field, null ) );
       }
-      
+
       for ( Annotation ann: field.getAnnotations() )
       {
          if ( ann.annotationType().isAnnotationPresent(DataBinderClass.class) )
@@ -887,7 +888,7 @@ public class Component extends Model
             selectionFields.put(field, ann);
          }
       }
-      
+
    }
 
    protected void checkPersistenceContextForComponentType()
@@ -964,7 +965,7 @@ public class Component extends Model
       {
          log.debug("Unable to load interceptor " + interceptorInstance.getClass(), e);
       }
-      catch (TypeNotPresentException e) 
+      catch (TypeNotPresentException e)
       {
          log.debug("Unable to load interceptor " + interceptorInstance.getClass(), e);
       }
@@ -973,16 +974,16 @@ public class Component extends Model
          throw new IllegalArgumentException("Unable to load interceptor " + interceptorInstance.getClass(), e);
       }
    }
-   
+
    public void addInterceptor(Interceptor interceptor)
    {
       if (interceptor.isInterceptorEnabled())
       {
-         if (interceptor.getType()==InterceptorType.SERVER) 
+         if (interceptor.getType()==InterceptorType.SERVER)
          {
             interceptors.add(interceptor);
          }
-         else 
+         else
          {
             clientSideInterceptors.add(interceptor);
          }
@@ -1050,13 +1051,13 @@ public class Component extends Model
          {
             Class<?> clazz = Reflections.classForName(interceptorName);
             interceptorInstance = clazz.newInstance();
-            
+
          }
          catch (NoClassDefFoundError e)
          {
             log.debug("Unable to load interceptor " + interceptorName, e);
          }
-         catch (TypeNotPresentException e) 
+         catch (TypeNotPresentException e)
          {
             log.debug("Unable to load interceptor " + interceptorName, e);
          }
@@ -1065,10 +1066,10 @@ public class Component extends Model
             throw new IllegalArgumentException("Unable to load interceptor " + interceptorName, e);
          }
          addInterceptor(interceptorInstance);
-         
+
       }
    }
-   
+
    private void initSecurity()
    {
       if ( beanClassHasAnnotation(Restrict.class) )
@@ -1076,7 +1077,7 @@ public class Component extends Model
          secure = true;
          return;
       }
-      
+
       for (Annotation annotation : getBeanClass().getAnnotations())
       {
          if (annotation.annotationType().isAnnotationPresent(RoleCheck.class))
@@ -1085,7 +1086,7 @@ public class Component extends Model
             return;
          }
       }
-      
+
       for (Method method : getBeanClass().getMethods())
       {
          for (Annotation annotation : method.getAnnotations())
@@ -1096,8 +1097,8 @@ public class Component extends Model
                secure = true;
                return;
             }
-         }   
-         
+         }
+
          for (Annotation[] annotations : method.getParameterAnnotations())
          {
             for (Annotation annotation : annotations)
@@ -1107,7 +1108,7 @@ public class Component extends Model
                   secure = true;
                   return;
                }
-               
+
             }
          }
       }
@@ -1131,14 +1132,14 @@ public class Component extends Model
          return false;
       }
    }
-   
+
    private static boolean hasAnnotation(Class clazz, String annotationName)
    {
       for (Annotation a : clazz.getAnnotations())
       {
-         if (a.annotationType().getName().equals(annotationName)) return true;          
+         if (a.annotationType().getName().equals(annotationName)) return true;
       }
-      
+
       for ( Method method : clazz.getMethods() )
       {
          for ( Annotation a : method.getAnnotations() )
@@ -1146,7 +1147,7 @@ public class Component extends Model
             if (a.annotationType().getName().equals(annotationName)) return true;
          }
       }
-      
+
       return false;
    }
 
@@ -1154,7 +1155,7 @@ public class Component extends Model
    {
       return hasAnnotation( getBeanClass(), annotationType );
    }
-   
+
    public boolean beanClassHasAnnotation(String annotationName)
    {
       return hasAnnotation( getBeanClass(), annotationName );
@@ -1303,17 +1304,17 @@ public class Component extends Model
       return inAttributes;
    }
 
-    public boolean needsInjection() 
+    public boolean needsInjection()
     {
-        return 
+        return
             !getInAttributes().isEmpty() ||
             !dataModelSelectionSetters.isEmpty() ||
             !parameterSetters.isEmpty();
     }
 
-    public boolean needsOutjection() 
+    public boolean needsOutjection()
     {
-        return 
+        return
             !getOutAttributes().isEmpty() ||
             !dataModelGetters.isEmpty();
     }
@@ -1354,10 +1355,10 @@ public class Component extends Model
               throw new IllegalStateException();
         }
     }
-    
 
-   protected Object instantiateSessionBean() 
-       throws Exception, 
+
+   protected Object instantiateSessionBean()
+       throws Exception,
               NamingException
    {
       Component old = SeamInterceptor.COMPONENT.get();
@@ -1370,15 +1371,15 @@ public class Component extends Model
       }
    }
 
-   
-   protected void postConstructSessionBean(Object bean) 
-       throws Exception, 
+
+   protected void postConstructSessionBean(Object bean)
+       throws Exception,
               NamingException
    {
         // ...
    }
-   
-   
+
+
    protected Object instantiateEntityBean() throws Exception
    {
       Constructor constructor = getBeanClass().getConstructor(new Class[0]);
@@ -1391,9 +1392,9 @@ public class Component extends Model
       constructor.setAccessible(accessible);
       return bean;
    }
-   
-   
-   protected void postConstructEntityBean(Object bean) 
+
+
+   protected void postConstructEntityBean(Object bean)
        throws Exception
    {
       initialize(bean);
@@ -1402,17 +1403,17 @@ public class Component extends Model
    protected Object instantiateJavaBean() throws Exception
    {
       Object bean = getBeanClass().newInstance();
-     
+
       if (interceptionEnabled) {
          JavaBeanInterceptor interceptor = new JavaBeanInterceptor(bean, this);
          bean = wrap(bean, interceptor);
       }
-      
+
       return bean;
    }
-   
-   
-   protected void postConstructJavaBean(Object bean) 
+
+
+   protected void postConstructJavaBean(Object bean)
        throws Exception
    {
       if (!interceptionEnabled) {
@@ -1427,7 +1428,7 @@ public class Component extends Model
          }
       }
    }
-   
+
    public void destroy(Object bean)
    {
       try
@@ -1589,7 +1590,7 @@ public class Component extends Model
       String name = dataModelGetter.getName();
       Annotation dataModelAnn = dataModelGetter.getAnnotation();
       ScopeType scope = wrapper.getVariableScope(dataModelAnn);
-      
+
       Object dataModel = getOutScope(scope, this).getContext().get(name);
       if ( dataModel!=null )
       {
@@ -1597,11 +1598,11 @@ public class Component extends Model
          {
             dataModelGetter.set(bean, wrapper.getWrappedData(dataModelAnn, dataModel));
          }
-      
+
          Object selectedIndex = wrapper.getSelection(dataModelAnn, dataModel);
-      
+
          if ( log.isDebugEnabled() ) log.debug( "selected row: " + selectedIndex );
-      
+
          if ( selectedIndex!=null )
          {
             BijectedAttribute setter = dataModelSelectionSetters.get(name);
@@ -1612,7 +1613,7 @@ public class Component extends Model
                setter.set(bean, selection);
             }
          }
-      
+
       }
    }
 
@@ -1626,19 +1627,19 @@ public class Component extends Model
 
    private void outjectDataModel(Object bean, BijectedAttribute dataModelGetter)
    {
-      
+
       DataBinder wrapper = createWrapper( dataModelGetter.getAnnotation() );
       Object list = dataModelGetter.get(bean);
       String name = dataModelGetter.getName();
       Annotation dataModelAnn = dataModelGetter.getAnnotation();
-      ScopeType scope = wrapper.getVariableScope(dataModelAnn);      
+      ScopeType scope = wrapper.getVariableScope(dataModelAnn);
       Context context = getOutScope(scope, this).getContext();
       Object existingDataModel = context.get(name);
-      
+
       boolean dirty = existingDataModel == null ||
             wrapper.isDirty(dataModelAnn, existingDataModel, list);
       boolean reoutject = existingDataModel!=null && scope==PAGE;
-      
+
       if (dirty)
       {
          if ( list!=null )
@@ -1654,7 +1655,7 @@ public class Component extends Model
       {
          context.set(name, existingDataModel);
       }
-         
+
    }
 
    private static DataBinder createWrapper(Annotation dataModelAnn)
@@ -1699,7 +1700,7 @@ public class Component extends Model
    {
       for ( BijectedAttribute<In> att : getInAttributes() )
       {
-         att.set( bean, getValueToInject( att.getAnnotation(), att.getName(), bean, enforceRequired ) );
+         att.set( bean, getValueToInject( att.getAnnotation(), att.getName(), bean, enforceRequired, att.getType()) );
       }
    }
 
@@ -1724,7 +1725,7 @@ public class Component extends Model
 
    private void outjectAttribute(Out out, String name, Object bean, Object value, boolean enforceRequired)
    {
-      
+
       if (value==null && enforceRequired && out.required())
       {
          throw new RequiredException(
@@ -1756,11 +1757,11 @@ public class Component extends Model
                   getAttributeMessage(name)
                );
          }
-      
+
          ScopeType outScope = component==null ?
                getOutScope( out.scope(), this ) :
                component.getScope();
-      
+
          if ( enforceRequired || outScope.isContextActive() )
          {
             if (value==null)
@@ -1822,7 +1823,7 @@ public class Component extends Model
          }
       }
 
-      if ( result.isEmpty() ) 
+      if ( result.isEmpty() )
       {
          for ( Class iface: clazz.getInterfaces() )
          {
@@ -1841,7 +1842,7 @@ public class Component extends Model
       return businessInterfaces;
    }
 
-   private static boolean isExcludedLocalInterfaceName(String name) 
+   private static boolean isExcludedLocalInterfaceName(String name)
    {
       return name.equals("java.io.Serializable") ||
             name.equals("java.io.Externalizable") ||
@@ -1942,7 +1943,7 @@ public class Component extends Model
    {
       return getInstance(name, create, true);
    }
-   
+
    public static Object getInstance(String name, boolean create, boolean allowAutocreation)
    {
       Object result = Contexts.lookupInStatefulContexts(name);
@@ -1959,7 +1960,7 @@ public class Component extends Model
    {
       return getInstance(name, scope, create, true);
    }
-   
+
    public static Object getInstance(String name, ScopeType scope, boolean create, boolean allowAutocreation)
    {
       Object result = scope==STATELESS ? null : scope.getContext().get(name);
@@ -2081,28 +2082,28 @@ public class Component extends Model
       Object instance;
       try{
          instance = instantiate();
-          
+
          if (getScope()!=STATELESS) {
             //put it in the context _before_ calling postconstuct or create
-            getScope().getContext().set(name, instance); 
+            getScope().getContext().set(name, instance);
          }
-         
+
          postConstruct(instance);
-            
+
          if (getScope()!=STATELESS) {
             callCreateMethod(instance);
-            
+
             if (Events.exists()) {
                 Events.instance().raiseEvent("org.jboss.seam.postCreate." + name, instance);
             }
          }
-         
-      } catch (Exception e) {
-    	  if (getScope()!=STATELESS) {
-    		  getScope().getContext().remove(name); 
-    	  }
 
-    	  throw new InstantiationException("Could not instantiate Seam component: " + name, e);
+      } catch (Exception e) {
+          if (getScope()!=STATELESS) {
+              getScope().getContext().remove(name);
+          }
+
+          throw new InstantiationException("Could not instantiate Seam component: " + name, e);
       }
 
       return instance;
@@ -2115,7 +2116,7 @@ public class Component extends Model
          callComponentMethod( instance, getDefaultRemoveMethod() );
       }
    }
-   
+
    public boolean hasDefaultRemoveMethod()
    {
       return defaultRemoveMethod!=null;
@@ -2241,7 +2242,7 @@ public class Component extends Model
       }
    }
 
-   private Object getValueToInject(In in, String name, Object bean, boolean enforceRequired)
+   private Object getValueToInject(In in, String name, Object bean, boolean enforceRequired, Class klass)
    {
       Object result;
       if ( name.startsWith("#") )
@@ -2291,6 +2292,11 @@ public class Component extends Model
          }
       }
 
+      // Add Lookup on pluggable provider
+      if (result==null) {
+          result = getExtensionService(name, klass, in.create());
+      }
+
       if ( result==null && enforceRequired && in.required() )
       {
          throw new RequiredException(
@@ -2304,6 +2310,23 @@ public class Component extends Model
       }
    }
 
+   public static Object getExtensionService(String name, Class klass, boolean create) {
+       ServiceProvider sp = (ServiceProvider) Component.getInstance(ServiceProvider.NAME);
+       if (sp!=null) {
+           if ( log.isDebugEnabled() )
+           {
+              log.debug("Service provider found with implementation " + sp.getClass());
+           }
+           return sp.lookup(name, klass, create);
+       } else {
+           if ( log.isDebugEnabled() )
+           {
+              log.debug("No extension Service provider found with implementation ");
+           }
+       }
+       return null;
+   }
+
    private Object getInstanceInAllNamespaces(String name, boolean create)
    {
       Object result;
@@ -2313,7 +2336,7 @@ public class Component extends Model
          for ( Namespace namespace: getImports() )
          {
             result = namespace.getComponentInstance(name, create);
-            if (result!=null) break; 
+            if (result!=null) break;
          }
       }
       if (result==null)
@@ -2321,7 +2344,7 @@ public class Component extends Model
          for ( Namespace namespace: Init.instance().getGlobalImports() )
          {
             result = namespace.getComponentInstance(name, create);
-            if (result!=null) break; 
+            if (result!=null) break;
          }
       }
       if (result==null)
@@ -2395,25 +2418,25 @@ public class Component extends Model
       return factory.createClass();
    }
 
-   private static final MethodFilter FINALIZE_FILTER = new MethodFilter() 
+   private static final MethodFilter FINALIZE_FILTER = new MethodFilter()
    {
-      public boolean isHandled(Method method) 
+      public boolean isHandled(Method method)
       {
          // skip finalize methods
          return method.getParameterTypes().length!=0 || !method.getName().equals( "finalize" );
       }
    };
-      
+
    public boolean isInterceptionEnabled()
    {
       return interceptionEnabled;
    }
 
-   public boolean isStartup() 
+   public boolean isStartup()
    {
       return startup;
    }
-   
+
    public boolean isSynchronize()
    {
       return synchronize;
@@ -2429,10 +2452,10 @@ public class Component extends Model
       return method==null || //EJB 3 JavaDoc says InvocationContext.getMethod() returns null for lifecycle callbacks!
             lifecycleMethods.contains(method);
    }
-   
+
    public boolean isConversationManagementMethod(Method method)
    {
-      return method!=null && 
+      return method!=null &&
             conversationManagementMethods.contains(method);
    }
 
@@ -2537,7 +2560,7 @@ public class Component extends Model
       private InitialValue[] initialValues;
       private Class elementType;
       private Class collectionClass;
-      
+
       public SetInitialValue(PropertyValue propertyValue, Class collectionClass, Type collectionType)
       {
          String[] expressions = propertyValue.getMultiValues();
@@ -2593,20 +2616,20 @@ public class Component extends Model
                 throw new IllegalArgumentException("Cannot instantiate a set of type " + collectionClass + "; try specifying type type in components.xml");
              }
           }
-          for (InitialValue iv: initialValues) 
+          for (InitialValue iv: initialValues)
           {
              set.add( iv.getValue(elementType) );
           }
           return set;
       }
-      
+
       @Override
       public String toString()
       {
          return "SetInitialValue(" + elementType.getSimpleName() + ")";
       }
    }
-   
+
    static class ListInitialValue implements InitialValue
    {
       private InitialValue[] initialValues;
@@ -2619,8 +2642,8 @@ public class Component extends Model
          String[] expressions = propertyValue.getMultiValues();
          initialValues = new InitialValue[expressions.length];
          isArray = collectionClass.isArray();
-         elementType = isArray ? 
-                  collectionClass.getComponentType() : 
+         elementType = isArray ?
+                  collectionClass.getComponentType() :
                   Reflections.getCollectionElementType(collectionType);
          if (propertyValue.getType() != null)
          {
@@ -2683,7 +2706,7 @@ public class Component extends Model
             return list;
          }
       }
-      
+
       @Override
       public String toString()
       {
@@ -2691,18 +2714,18 @@ public class Component extends Model
       }
 
    }
-   
+
    static class MapInitialValue implements InitialValue
    {
       private Map<InitialValue, InitialValue> initialValues;
       private Class elementType;
       private Class keyType;
       private Class collectionClass;
-      
+
       public MapInitialValue(PropertyValue propertyValue, Class collectionClass, Type collectionType)
       {
          Map<String, String> expressions = propertyValue.getKeyedValues();
-         initialValues = new LinkedHashMap<InitialValue, InitialValue>(expressions.size());      
+         initialValues = new LinkedHashMap<InitialValue, InitialValue>(expressions.size());
          elementType = Reflections.getCollectionElementType(collectionType);
          keyType = Reflections.getMapKeyType(collectionType);
          if (propertyValue.getType() != null )
@@ -2717,7 +2740,7 @@ public class Component extends Model
          {
             PropertyValue keyValue = new Conversions.FlatPropertyValue( me.getKey() );
             PropertyValue elementValue = new Conversions.FlatPropertyValue( me.getValue() );
-            initialValues.put( getInitialValue(keyValue, keyType, keyType), getInitialValue(elementValue, elementType, elementType) ); 
+            initialValues.put( getInitialValue(keyValue, keyType, keyType), getInitialValue(elementValue, elementType, elementType) );
          }
       }
 
@@ -2754,14 +2777,14 @@ public class Component extends Model
                throw new IllegalArgumentException("Cannot instantiate a map of type " + collectionClass + "; try specifying type type in components.xml");
             }
          }
-        
+
          for ( Map.Entry<InitialValue, InitialValue> me : initialValues.entrySet() )
          {
             result.put( me.getKey().getValue(keyType), me.getValue().getValue(elementType) );
          }
          return result;
       }
-      
+
       @Override
       public String toString()
       {
@@ -2769,7 +2792,7 @@ public class Component extends Model
       }
 
    }
-   
+
    public interface BijectedAttribute<T extends Annotation>
    {
       public String getName();
@@ -2784,7 +2807,7 @@ public class Component extends Model
       private final String name;
       private final Method method;
       private final T annotation;
-      
+
       private BijectedMethod(String name, Method method, T annotation)
       {
          this.name = name;
@@ -2821,19 +2844,19 @@ public class Component extends Model
          return "BijectedMethod(" + name + ')';
       }
    }
-   
+
    final class BijectedProperty<T extends Annotation> implements BijectedAttribute<T>
    {
-      
+
       private BijectedMethod<T> getter;
       private BijectedMethod<T> setter;
-      
+
       public BijectedProperty(String name, Method getter, Method setter, T annotation)
       {
          this.getter = new BijectedMethod(name, getter, annotation);
          this.setter = new BijectedMethod(name, setter, annotation);
       }
-      
+
       public BijectedProperty(String name, Method getter, T annotation)
       {
          this.getter = new BijectedMethod(name, getter, annotation);
@@ -2842,7 +2865,7 @@ public class Component extends Model
             Method setterMethod = Reflections.getSetterMethod(getter.getDeclaringClass(), name);
             this.setter = new BijectedMethod(name, setterMethod, annotation);
          }
-         catch (IllegalArgumentException e) {}        
+         catch (IllegalArgumentException e) {}
       }
 
       public Object get(Object bean)
@@ -2871,17 +2894,17 @@ public class Component extends Model
          {
             throw new IllegalArgumentException("Component must have a setter for " + name);
          }
-         setter.set(bean, value); 
+         setter.set(bean, value);
       }
-      
+
    }
-   
+
    final class BijectedField<T extends Annotation> implements BijectedAttribute<T>
    {
       private final String name;
       private final Field field;
       private final T annotation;
-      
+
       private BijectedField(String name, Field field, T annotation)
       {
          this.name = name;
@@ -2933,17 +2956,17 @@ public class Component extends Model
    {
       return namespace;
    }
-   
+
    public boolean isPerNestedConversation()
    {
       return perNestedConversation;
    }
-   
+
    public boolean hasConversationManagementMethods()
    {
       return !conversationManagementMethods.isEmpty();
    }
-   
+
    public boolean isSecure()
    {
       return secure;
