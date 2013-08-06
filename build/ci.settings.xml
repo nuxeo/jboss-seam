@@ -49,7 +49,6 @@ under the License.
   <localRepository>/path/to/local/repo</localRepository>
   -->
   
-  <localRepository>${env.WORKSPACE}/m2/repository</localRepository>
 
   <!-- interactiveMode
    | This will determine whether maven prompts you when it needs input. If set to false,
@@ -142,12 +141,14 @@ under the License.
       <url>http://my.repository.com/repo/path</url>
     </mirror>
      -->
+<!--
      <mirror>
        <id>fake.mirror.of.central</id>
        <mirrorOf>central</mirrorOf>
        <name>Fake mirror of central - reroutes central to repository.jboss.org</name>
        <url>http://repository.jboss.org/nexus/content/groups/public-jboss</url>
      </mirror>
+-->
   </mirrors>
   
   <!-- profiles
@@ -236,14 +237,25 @@ under the License.
       </properties>
     </profile>
     -->
+    <profile>
+      <id>jboss-seam</id>
+
+      <repositories>
+        <repository>
+          <id>jboss-fake-samere</id>
+          <url>http://repository.jboss.org/nexus/content/groups/public-jboss</url>
+        </repository>
+      </repositories>
+    </profile>
+
+
   </profiles>
 
   <!-- activeProfiles
    | List of profiles that are active for all builds.
    |
-  <activeProfiles>
-    <activeProfile>alwaysActiveProfile</activeProfile>
-    <activeProfile>anotherAlwaysActiveProfile</activeProfile>
-  </activeProfiles>
   -->
+  <activeProfiles>
+    <activeProfile>jboss-seam</activeProfile>
+  </activeProfiles>
 </settings>
