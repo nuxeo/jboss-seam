@@ -2005,6 +2005,11 @@ public class Component extends Model
          }
       }
 
+      // lookup in Nuxeo provider
+      if (result == null &&  component == null && !ServiceProvider.NAME.equals(name)) {
+          result =  getExtensionService(name, null, create);
+      }
+
       return result;
 
    }
@@ -2292,8 +2297,8 @@ public class Component extends Model
          }
       }
 
-      // Add Lookup on pluggable provider
-      if (result==null) {
+      // do the lookup in pluuggable provider via Class
+      if (result == null) {
           result = getExtensionService(name, klass, in.create());
       }
 
