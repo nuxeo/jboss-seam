@@ -58,15 +58,15 @@ import org.jboss.seam.web.ServletContexts;
 public class SeamPhaseListener implements PhaseListener
 {
    private static final long serialVersionUID = -9127555729455066493L;
-   
+
    private static final LogProvider log = Logging.getLogProvider(SeamPhaseListener.class);
-   
+
    private static boolean exists = false;
-   
+
    private static final Method SET_RENDER_PARAMETER;
    private static final Class ACTION_RESPONSE;
    private static final Class PORTLET_REQUEST;
-   
+
    static
    {
       Method method = null;
@@ -87,22 +87,22 @@ public class SeamPhaseListener implements PhaseListener
 
    public SeamPhaseListener()
    {
-      if (exists) 
+      if (exists)
       {
          log.warn("There should only be one Seam phase listener per application");
       }
       exists=true;
    }
-   
+
    public PhaseId getPhaseId()
    {
       return ANY_PHASE;
    }
-   
+
    public void beforePhase(PhaseEvent event)
    {
       log.trace( "before phase: " + event.getPhaseId() );
-      
+
       FacesLifecycle.setPhaseId( event.getPhaseId() );
 
       try
@@ -123,7 +123,7 @@ public class SeamPhaseListener implements PhaseListener
          {
             Exceptions.instance().handle(e);
          }
-         catch (Exception ehe) 
+         catch (Exception ehe)
          {
             log.error("swallowing exception", e);
          }
@@ -138,39 +138,39 @@ public class SeamPhaseListener implements PhaseListener
          beforeRestoreView( event.getFacesContext() );
          ServletContexts.instance().setRequest((HttpServletRequest) event.getFacesContext().getExternalContext().getRequest());
       }
-      
-      handleTransactionsBeforePhase(event);         
-      
+
+      handleTransactionsBeforePhase(event);
+
       if ( event.getPhaseId() == RENDER_RESPONSE )
       {
          beforeRenderResponse( event.getFacesContext() );
       }
-      
+
    }
-   
+
    private void beforePortletPhase(PhaseEvent event)
    {
 
       FacesContext facesContext = event.getFacesContext();
-      
+
       boolean notInitialised=false;
 
       if ( event.getPhaseId() == RESTORE_VIEW )
       {
          beforeRestoreView(facesContext);
       }
-      if ( event.getPhaseId() == RENDER_RESPONSE && !Contexts.isApplicationContextActive() ) 
+      if ( event.getPhaseId() == RENDER_RESPONSE && !Contexts.isApplicationContextActive() )
       {
           beforeRestoreView(facesContext);
           notInitialised = true;
       }
-      
+
       //delegate to subclass:
       handleTransactionsBeforePhase(event);
-      
-      if (event.getPhaseId() == RENDER_RESPONSE) 
+
+      if (event.getPhaseId() == RENDER_RESPONSE)
       {
-         if (notInitialised) 
+         if (notInitialised)
          {
             afterRestoreView(facesContext);
          }
@@ -181,7 +181,7 @@ public class SeamPhaseListener implements PhaseListener
    public void afterPhase(PhaseEvent event)
    {
       log.trace( "after phase: " + event.getPhaseId() );
-      
+
       try
       {
          raiseEventsAfterPhase(event);
@@ -208,25 +208,25 @@ public class SeamPhaseListener implements PhaseListener
                afterResponseComplete(event.getFacesContext());
             }
          }
-         catch (Exception ehe) 
+         catch (Exception ehe)
          {
             log.error("swallowing exception", e);
          }
       }
 
       FacesLifecycle.clearPhaseId();
-      
+
    }
 
    private void afterServletPhase(PhaseEvent event)
    {
-  
+
       FacesContext facesContext = event.getFacesContext();
-      
+
       if ( event.getPhaseId() == RESTORE_VIEW )
       {
          afterRestoreView(facesContext);
-      }      
+      }
       else if ( event.getPhaseId() == INVOKE_APPLICATION )
       {
          afterInvokeApplication();
@@ -235,13 +235,13 @@ public class SeamPhaseListener implements PhaseListener
       {
          afterProcessValidations(facesContext);
       }
-            
-      //has to happen after, since restoreAnyConversationContext() 
+
+      //has to happen after, since restoreAnyConversationContext()
       //can add messages
       FacesMessages.afterPhase();
-      
+
       handleTransactionsAfterPhase(event);
-            
+
       if ( event.getPhaseId() == RENDER_RESPONSE )
       {
          afterRenderResponse(facesContext);
@@ -251,20 +251,20 @@ public class SeamPhaseListener implements PhaseListener
          afterResponseComplete(facesContext);
       }
    }
-   
+
    private void afterPortletPhase(PhaseEvent event)
    {
       Object portletPhase = event.getFacesContext().getExternalContext().getRequestMap().get("javax.portlet.faces.phase");
 
-      if (event.getPhaseId() == RESTORE_VIEW) 
+      if (event.getPhaseId() == RESTORE_VIEW)
       {
          afterRestoreView(event.getFacesContext());
       }
-      else if (event.getPhaseId() == INVOKE_APPLICATION) 
+      else if (event.getPhaseId() == INVOKE_APPLICATION)
       {
          afterInvokeApplication();
       }
-      else if (event.getPhaseId() == PROCESS_VALIDATIONS) 
+      else if (event.getPhaseId() == PROCESS_VALIDATIONS)
       {
          afterProcessValidations(event.getFacesContext());
       }
@@ -274,7 +274,7 @@ public class SeamPhaseListener implements PhaseListener
       // delegate to subclass:
       handleTransactionsAfterPhase(event);
 
-      if (event.getPhaseId() == RENDER_RESPONSE) 
+      if (event.getPhaseId() == RENDER_RESPONSE)
       {
          // writeConversationIdToResponse(
          // facesContext.getExternalContext().getResponse() );
@@ -282,11 +282,11 @@ public class SeamPhaseListener implements PhaseListener
       }
       else if ( (null != portletPhase && "ActionPhase".equals(portletPhase.toString()) )
              && (event.getPhaseId() == INVOKE_APPLICATION
-                     || event.getFacesContext().getRenderResponse() 
+                     || event.getFacesContext().getRenderResponse()
                      || event.getFacesContext().getResponseComplete()) )
       {
          Manager.instance().beforeRedirect();
-         if ( Manager.instance().isLongRunningConversation() ) 
+         if ( Manager.instance().isLongRunningConversation() )
          {
              setPortletRenderParameter(
                    event.getFacesContext().getExternalContext().getResponse(),
@@ -296,7 +296,7 @@ public class SeamPhaseListener implements PhaseListener
          afterResponseComplete( event.getFacesContext() );
       }
    }
-   
+
    private static void setPortletRenderParameter(Object response, String conversationIdParameter, String conversationId)
    {
       if ( ACTION_RESPONSE.isInstance(response) )
@@ -304,50 +304,50 @@ public class SeamPhaseListener implements PhaseListener
          Reflections.invokeAndWrap(SET_RENDER_PARAMETER, response, conversationIdParameter, conversationId);
       }
    }
-   
+
    private static boolean isPortletRequest(PhaseEvent event)
    {
-      return PORTLET_REQUEST!=null && 
+      return PORTLET_REQUEST!=null &&
             PORTLET_REQUEST.isInstance( event.getFacesContext().getExternalContext().getRequest() );
    }
-   
+
    public void handleTransactionsBeforePhase(PhaseEvent event)
    {
-      if ( Init.instance().isTransactionManagementEnabled() ) 
+      if ( Init.instance().isTransactionManagementEnabled() )
       {
          PhaseId phaseId = event.getPhaseId();
-         boolean beginTran = phaseId == PhaseId.RENDER_RESPONSE || 
+         boolean beginTran = phaseId == PhaseId.RENDER_RESPONSE ||
                phaseId == ( Transaction.instance().isConversationContextRequired() ? PhaseId.APPLY_REQUEST_VALUES : PhaseId.RESTORE_VIEW );
                //( phaseId == PhaseId.RENDER_RESPONSE && !Init.instance().isClientSideConversations() );
-         
-         if (beginTran) 
+
+         if (beginTran)
          {
             begin(phaseId);
          }
       }
    }
-   
+
    public void handleTransactionsAfterPhase(PhaseEvent event)
    {
-      if ( Init.instance().isTransactionManagementEnabled() ) 
+      if ( Init.instance().isTransactionManagementEnabled() )
       {
          PhaseId phaseId = event.getPhaseId();
-         boolean commitTran = phaseId == PhaseId.INVOKE_APPLICATION || 
+         boolean commitTran = phaseId == PhaseId.INVOKE_APPLICATION ||
                event.getFacesContext().getRenderResponse() || //TODO: no need to commit the tx if we failed to restore the view
                event.getFacesContext().getResponseComplete() ||
                phaseId == PhaseId.RENDER_RESPONSE;
                //( phaseId == PhaseId.RENDER_RESPONSE && !Init.instance().isClientSideConversations() );
-         
+
          if (commitTran)
-         { 
+         {
             commitOrRollback(phaseId); //we commit before destroying contexts, cos the contexts have the PC in them
          }
       }
    }
-   
+
    protected void handleTransactionsAfterPageActions(FacesContext facesContext)
    {
-      if ( Init.instance().isTransactionManagementEnabled() ) 
+      if ( Init.instance().isTransactionManagementEnabled() )
       {
          commitOrRollback("after invoking page actions");
          if ( !facesContext.getResponseComplete() )
@@ -356,10 +356,10 @@ public class SeamPhaseListener implements PhaseListener
          }
       }
    }
-   
-   protected void afterInvokeApplication() 
+
+   protected void afterInvokeApplication()
    {
-      if ( Init.instance().isTransactionManagementEnabled() ) 
+      if ( Init.instance().isTransactionManagementEnabled() )
       {
          addTransactionFailedMessage();
       }
@@ -369,7 +369,7 @@ public class SeamPhaseListener implements PhaseListener
    {
       Validation.instance().afterProcessValidations(facesContext);
    }
-   
+
    /**
     * Set up the Seam contexts, except for the conversation
     * context
@@ -378,7 +378,7 @@ public class SeamPhaseListener implements PhaseListener
    {
       FacesLifecycle.beginRequest( facesContext.getExternalContext() );
    }
-   
+
    /**
     * Restore the page and conversation contexts during a JSF request
     */
@@ -398,7 +398,7 @@ public class SeamPhaseListener implements PhaseListener
       {
          Events.instance().raiseEvent("org.jboss.seam.beforePhase", event);
       }
-      
+
       /*if ( Contexts.isConversationContextActive() && Init.instance().isJbpmInstalled() && Pageflow.instance().isInProcess() )
       {
          String name;
@@ -426,7 +426,7 @@ public class SeamPhaseListener implements PhaseListener
          Pageflow.instance().processEvents(name);
       }*/
    }
-   
+
    public void raiseEventsAfterPhase(PhaseEvent event)
    {
       if ( Contexts.isApplicationContextActive() )
@@ -434,7 +434,7 @@ public class SeamPhaseListener implements PhaseListener
          Events.instance().raiseEvent("org.jboss.seam.afterPhase", event);
       }
    }
-   
+
    /**
     * Add a faces message when Seam-managed transactions fail.
     */
@@ -444,24 +444,27 @@ public class SeamPhaseListener implements PhaseListener
       {
          if ( Transaction.instance().isRolledBackOrMarkedRollback() )
          {
-            FacesMessages.instance().addFromResourceBundleOrDefault(
-                     StatusMessage.Severity.WARN, 
-                     "org.jboss.seam.TransactionFailed", 
-                     "Transaction failed"
-                  );
+            // NXP-12483 : only add the default message if none was already set
+            if (FacesMessages.instance().getCurrentMessages().size()==0) {
+                FacesMessages.instance().addFromResourceBundleOrDefault(
+                         StatusMessage.Severity.WARN,
+                         "org.jboss.seam.TransactionFailed",
+                         "Transaction failed"
+                      );
+            }
          }
       }
       catch (Exception e) {} //swallow silently, not important
    }
-   
+
    protected void beforeRenderResponse(FacesContext facesContext)
-   {  
-      
+   {
+
       if ( Contexts.isPageContextActive() )
       {
          Context pageContext = Contexts.getPageContext();
          //after every time that the view may have changed,
-         //we need to flush the page context, since the 
+         //we need to flush the page context, since the
          //attribute map is being discarder
          pageContext.flush();
          //force refresh of the conversation lists (they are kept in PAGE context)
@@ -469,13 +472,13 @@ public class SeamPhaseListener implements PhaseListener
          pageContext.remove("org.jboss.seam.core.conversationList");
          pageContext.remove("org.jboss.seam.core.conversationStack");
       }
-      
+
       preRenderPage(facesContext);
-      
+
       if ( facesContext.getResponseComplete() )
       {
          //workaround for a bug in MyFaces prior to 1.1.3
-         if ( Init.instance().isMyFacesLifecycleBug() ) 
+         if ( Init.instance().isMyFacesLifecycleBug() )
          {
             FacesLifecycle.endRequest( facesContext.getExternalContext() );
          }
@@ -483,49 +486,49 @@ public class SeamPhaseListener implements PhaseListener
       else //if the page actions did not call responseComplete()
       {
          FacesMessages.instance().beforeRenderResponse();
-         //do this both before and after render, since conversations 
+         //do this both before and after render, since conversations
          //and pageflows can begin during render
-         FacesManager.instance().prepareBackswitch(facesContext); 
+         FacesManager.instance().prepareBackswitch(facesContext);
       }
-      
+
       FacesPage.instance().storeConversation();
       FacesPage.instance().storePageflow();
-      
+
       PersistenceContexts persistenceContexts = PersistenceContexts.instance();
-      if (persistenceContexts != null) 
+      if (persistenceContexts != null)
       {
           persistenceContexts.beforeRender();
       }
    }
-   
+
    protected void afterRenderResponse(FacesContext facesContext)
    {
-      //do this both before and after render, since conversations 
+      //do this both before and after render, since conversations
       //and pageflows can begin during render
       FacesManager.instance().prepareBackswitch(facesContext);
-      
+
       PersistenceContexts persistenceContexts = PersistenceContexts.instance();
-      if (persistenceContexts != null) 
+      if (persistenceContexts != null)
       {
           persistenceContexts.afterRender();
       }
-      
+
       ExternalContext externalContext = facesContext.getExternalContext();
       Manager.instance().endRequest( externalContext.getSessionMap() );
       FacesLifecycle.endRequest(externalContext);
    }
-   
+
    protected void afterResponseComplete(FacesContext facesContext)
    {
-      //responseComplete() was called by one of the other phases, 
+      //responseComplete() was called by one of the other phases,
       //so we will never get to the RENDER_RESPONSE phase
-      //Note: we can't call Manager.instance().beforeRedirect() here, 
+      //Note: we can't call Manager.instance().beforeRedirect() here,
       //since a redirect is not the only reason for a responseComplete
       ExternalContext externalContext = facesContext.getExternalContext();
       Manager.instance().endRequest( externalContext.getSessionMap() );
       FacesLifecycle.endRequest( facesContext.getExternalContext() );
    }
-   
+
    private void postRestorePage(FacesContext facesContext, Map parameters, boolean conversationFound)
    {
       if ( !Pages.isDebugPage() )
@@ -535,18 +538,18 @@ public class SeamPhaseListener implements PhaseListener
          {
             Pages.instance().redirectToNoConversationView();
          }
-         
+
          Manager.instance().handleConversationPropagation(parameters);
-         
+
          if ( Init.instance().isJbpmInstalled() && !isExceptionHandlerRedirect() )
          {
             Pageflow.instance().validatePageflow(facesContext);
          }
-         
+
          Pages.instance().postRestore(facesContext);
       }
    }
-  
+
    private boolean preRenderPage(FacesContext facesContext)
    {
       if ( Pages.isDebugPage() )
@@ -565,7 +568,7 @@ public class SeamPhaseListener implements PhaseListener
          finally
          {
             FacesLifecycle.setPhaseId(PhaseId.RENDER_RESPONSE);
-            if (actionsWereCalled) 
+            if (actionsWereCalled)
             {
                FacesMessages.afterPhase();
                handleTransactionsAfterPageActions(facesContext); //TODO: does it really belong in the finally?
@@ -573,20 +576,20 @@ public class SeamPhaseListener implements PhaseListener
          }
       }
    }
-   
+
    private boolean isExceptionHandlerRedirect()
    {
       return Contexts.getConversationContext().isSet("org.jboss.seam.handledException");
    }
-     
+
    void begin(PhaseId phaseId)
    {
       begin("prior to phase: " + phaseId);
    }
-   
-   void begin(String phaseString) 
+
+   void begin(String phaseString)
    {
-      try 
+      try
       {
          if ( !Transaction.instance().isActiveOrMarkedRollback() )
          {
@@ -599,32 +602,32 @@ public class SeamPhaseListener implements PhaseListener
          throw new IllegalStateException("Could not start transaction", e);
       }
    }
-   
+
    void commitOrRollback(PhaseId phaseId)
    {
       commitOrRollback("after phase: " + phaseId);
    }
-   
-   void commitOrRollback(String phaseString) 
-   {  
+
+   void commitOrRollback(String phaseString)
+   {
       try {
          if (Transaction.instance().isActive()) {
              try {
-                 log.debug("committing transaction " + phaseString);            
+                 log.debug("committing transaction " + phaseString);
                  Transaction.instance().commit();
 
              } catch (IllegalStateException e) {
-                 log.warn("TX commit failed with illegal state exception. This may be " + 
+                 log.warn("TX commit failed with illegal state exception. This may be " +
                           "because the tx timed out and was rolled back in the background.", e);
              }
          } else if ( Transaction.instance().isRolledBackOrMarkedRollback()) {
             log.debug("rolling back transaction " + phaseString);
             Transaction.instance().rollback();
          }
-         
+
       } catch (Exception e) {
          throw new IllegalStateException("Could not commit transaction", e);
       }
    }
-   
+
 }
