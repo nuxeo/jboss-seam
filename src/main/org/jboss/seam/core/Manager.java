@@ -29,7 +29,6 @@ import org.jboss.seam.annotations.Scope;
 import org.jboss.seam.annotations.intercept.BypassInterceptors;
 import org.jboss.seam.contexts.Contexts;
 import org.jboss.seam.contexts.Lifecycle;
-import org.jboss.seam.jsf.ConcurrentRequestTimeoutExceptionHandler;
 import org.jboss.seam.jsf.concurrency.ConcurrentRequestResolver;
 import org.jboss.seam.log.LogProvider;
 import org.jboss.seam.log.Logging;
@@ -573,7 +572,7 @@ public class Manager
              }
          }
          // no resolver or no resolution
-         log.info("No resolved of no resolution found : raising ConcurrentRequestTimeoutException");
+         log.info("No resolver or no resolution found : fallback on standard seam handling, raising ConcurrentRequestTimeoutException");
          // fallback to default "bad" processing
          throw new ConcurrentRequestTimeoutException("Concurrent call to conversation");
       }
