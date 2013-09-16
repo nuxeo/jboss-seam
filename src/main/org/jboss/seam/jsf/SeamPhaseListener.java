@@ -196,14 +196,6 @@ public class SeamPhaseListener implements PhaseListener
             afterServletPhase(event);
          }
       }
-      catch (ConcurrentRequestTimeoutException ccre) {
-          //HttpServletResponse response = (HttpServletResponse) event.getFacesContext().getExternalContext().getResponse();
-          //response.setStatus(204);
-
-          //event.getFacesContext().responseComplete();
-          System.out.println("XXX Stoping request !");
-          return;
-      }
       catch (Exception e)
       {
          log.warn("uncaught exception, passing to exception handler", e);

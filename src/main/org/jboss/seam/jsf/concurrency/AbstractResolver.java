@@ -34,7 +34,7 @@ public abstract class AbstractResolver implements ConcurrentRequestResolver {
             e.printStackTrace();
         }
         FacesContext.getCurrentInstance().responseComplete();
-        return false;
+        return true;
     }
 
     protected void addTransientMessage(StatusMessage.Severity severity, String keyMessage, String defaultMessage) {

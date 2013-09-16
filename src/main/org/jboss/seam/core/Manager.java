@@ -547,10 +547,11 @@ public class Manager
       }
       else
       {
-         log.debug("Concurrent call to conversation");
+         log.info("Concurrent call to conversation");
          // try to resolve this !
          ConcurrentRequestResolver resolver = getConcurrentRequestResolver();
          if (resolver!=null) {
+             log.info("Using " + resolver.getClass().getCanonicalName() + " to resolve concurrent call");
              HttpServletRequest request = (HttpServletRequest) FacesContext.getCurrentInstance().getExternalContext().getRequest();
              HttpServletResponse response = (HttpServletResponse) FacesContext.getCurrentInstance().getExternalContext().getResponse();
              if (resolver.handleConcurrentRequest(ce, request, response)) {
@@ -572,6 +573,7 @@ public class Manager
              }
          }
          // no resolver or no resolution
+         log.info("No resolved of no resolution found : raising ConcurrentRequestTimeoutException");
          // fallback to default "bad" processing
          throw new ConcurrentRequestTimeoutException("Concurrent call to conversation");
       }
