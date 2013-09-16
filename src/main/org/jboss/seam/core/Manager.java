@@ -15,6 +15,10 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 
+import javax.faces.context.FacesContext;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.jboss.seam.Component;
 import org.jboss.seam.ConcurrentRequestTimeoutException;
 import org.jboss.seam.ScopeType;
@@ -25,6 +29,8 @@ import org.jboss.seam.annotations.Scope;
 import org.jboss.seam.annotations.intercept.BypassInterceptors;
 import org.jboss.seam.contexts.Contexts;
 import org.jboss.seam.contexts.Lifecycle;
+import org.jboss.seam.jsf.ConcurrentRequestTimeoutExceptionHandler;
+import org.jboss.seam.jsf.concurrency.ConcurrentRequestResolver;
 import org.jboss.seam.log.LogProvider;
 import org.jboss.seam.log.Logging;
 import org.jboss.seam.navigation.ConversationIdParameter;
@@ -45,9 +51,9 @@ import org.jboss.seam.web.Session;
 @BypassInterceptors
 public class Manager
 {
-   
+
    private static final LogProvider log = Logging.getLogProvider(Manager.class);
-   
+
    public static final String REDIRECT_FROM_MANAGER = "org.jboss.seam.core.Manager";
 
    private static final String DEFAULT_ENCODING = "UTF-8";
@@ -58,22 +64,22 @@ public class Manager
 
    //Is the current conversation "long-running"?
    private boolean isLongRunningConversation;
-   
+
    //private boolean updateModelValuesCalled;
 
    private boolean destroyBeforeRedirect;
-   
+
    private int conversationTimeout = 600000; //10 mins
    private int concurrentRequestTimeout = 1000; //one second
-   
+
    private String conversationIdParameter = "conversationId";
    private String parentConversationIdParameter = "parentConversationId";
 
    private String URIEncoding = DEFAULT_ENCODING;
-   
+
    private FlushModeType defaultFlushMode;
-   
-   
+
+
    // DONT BREAK, icefaces uses this
    public String getCurrentConversationId()
    {
@@ -89,25 +95,25 @@ public class Manager
       currentConversationId = id;
       currentConversationEntry = null;
    }
-   
+
    /**
     * Change the id of the current conversation.
-    * 
+    *
     * @param id the new conversation id
     */
    public void updateCurrentConversationId(String id)
    {
       if (id != null && id.equals(currentConversationId))
       {
-         // the conversation id hasn't changed, do nothing       
+         // the conversation id hasn't changed, do nothing
          return;
       }
-      
+
       if ( ConversationEntries.instance().getConversationIds().contains(id) )
       {
          throw new IllegalStateException("Conversation id is already in use: " + id);
       }
-      
+
       String[] names = Contexts.getConversationContext().getNames();
       Object[] values = new Object[names.length];
       for (int i=0; i<names.length; i++)
@@ -116,27 +122,27 @@ public class Manager
          Contexts.getConversationContext().remove(names[i]);
       }
       Contexts.getConversationContext().flush();
-      
+
       ConversationEntry ce = ConversationEntries.instance().updateConversationId(currentConversationId, id);
       String priorId = currentConversationId;
       setCurrentConversationId(id);
-      
+
       if (ce!=null)
       {
          setCurrentConversationIdStack( ce.getConversationIdStack() );
          //TODO: what about child conversations?!
-      } 
-      else 
+      }
+      else
       {
           // when ce is null, the id stack will be left with a reference to
           // the old conversation id, so we need patch that up
           int pos = currentConversationIdStack.indexOf(priorId);
-          if (pos != -1) 
+          if (pos != -1)
           {
               currentConversationIdStack.set(pos, id);
-          }          
+          }
       }
-      
+
       for (int i=0; i<names.length; i++)
       {
          Contexts.getConversationContext().set(names[i], values[i]);
@@ -147,7 +153,7 @@ public class Manager
    {
       if ( stack!=null )
       {
-         //iterate in reverse order, so that current conversation 
+         //iterate in reverse order, so that current conversation
          //sits at top of conversation lists
          ListIterator<String> iter = stack.listIterator( stack.size() );
          while ( iter.hasPrevious() )
@@ -161,7 +167,7 @@ public class Manager
          }
       }
    }
-   
+
    private void endNestedConversations(String id)
    {
       for ( ConversationEntry ce: ConversationEntries.instance().getConversationEntries() )
@@ -203,7 +209,7 @@ public class Manager
       if ( ce==null ) return null;
       return ce.getTimeout();
    }
-   
+
    public Integer getCurrentConversationConcurrentRequestTimeout()
    {
       ConversationEntry ce = getCurrentConversationEntry();
@@ -217,13 +223,13 @@ public class Manager
       if ( ce==null ) return null;
       return ce.getViewId();
    }
-   
+
    public String getParentConversationViewId()
    {
       ConversationEntry conversationEntry = ConversationEntries.instance().getConversationEntry(getParentConversationId());
       return conversationEntry==null ? null : conversationEntry.getViewId();
    }
-   
+
    public String getParentConversationId()
    {
       return currentConversationIdStack==null || currentConversationIdStack.size()<2 ?
@@ -249,14 +255,14 @@ public class Manager
 
    public boolean isReallyLongRunningConversation()
    {
-      return isLongRunningConversation() && 
+      return isLongRunningConversation() &&
             !getCurrentConversationEntry().isRemoveAfterRedirect() &&
             !Session.instance().isInvalid();
    }
-   
+
    public boolean isNestedConversation()
    {
-      return currentConversationIdStack!=null && 
+      return currentConversationIdStack!=null &&
             currentConversationIdStack.size()>1;
    }
 
@@ -298,7 +304,7 @@ public class Manager
                if ( delta > conversationEntry.getTimeout() )
                {
                   if ( locked )
-                  { 
+                  {
                      if ( log.isDebugEnabled() )
                      {
                         log.debug("conversation timeout for conversation: " + conversationEntry.getId());
@@ -310,15 +316,15 @@ public class Manager
                      //the reason garbage locks can exist is that we don't require a servlet filter to
                      //exist - but if we do use SeamExceptionFilter, it will clean up garbage and this
                      //case should never occur
-                     
-                     //NOTE: this is slightly broken - in theory there is a window where a new request 
-                     //      could have come in and got the lock just before us but called touch() just 
-                     //      after we check the timeout - but in practice this would be extremely rare, 
-                     //      and that request will get an IllegalMonitorStateException when it tries to 
+
+                     //NOTE: this is slightly broken - in theory there is a window where a new request
+                     //      could have come in and got the lock just before us but called touch() just
+                     //      after we check the timeout - but in practice this would be extremely rare,
+                     //      and that request will get an IllegalMonitorStateException when it tries to
                      //      unlock() the CE
                      log.info("destroying conversation with garbage lock: " + conversationEntry.getId());
                   }
-                  if ( Events.exists() ) 
+                  if ( Events.exists() )
                   {
                      Events.instance().raiseEvent("org.jboss.seam.conversationTimeout", conversationEntry.getId());
                   }
@@ -343,7 +349,7 @@ public class Manager
    }
 
    /**
-    * Touch the conversation stack, destroy ended conversations, 
+    * Touch the conversation stack, destroy ended conversations,
     * and timeout inactive conversations.
     */
    public void endRequest(Map<String, Object> session)
@@ -366,7 +372,7 @@ public class Manager
          removeCurrentConversationAndDestroyNestedContexts(session);
       }
 
-      /*if ( !Init.instance().isClientSideConversations() ) 
+      /*if ( !Init.instance().isClientSideConversations() )
       {*/
          // difficult question: is it really safe to do this here?
          // right now we do have to do it after committing the Seam
@@ -375,11 +381,11 @@ public class Manager
          Manager.instance().conversationTimeout(session);
       //}
    }
-   
+
    public void unlockConversation()
    {
       ConversationEntry ce = getCurrentConversationEntry();
-      if (ce!=null) 
+      if (ce!=null)
       {
          if ( ce.isLockedByCurrentThread() )
          {
@@ -392,7 +398,7 @@ public class Manager
       }
    }
 
-   private void removeCurrentConversationAndDestroyNestedContexts(Map<String, Object> session) 
+   private void removeCurrentConversationAndDestroyNestedContexts(Map<String, Object> session)
    {
       ConversationEntries conversationEntries = ConversationEntries.getInstance();
       if (conversationEntries!=null)
@@ -402,7 +408,7 @@ public class Manager
       }
    }
 
-   private void destroyNestedConversationContexts(Map<String, Object> session, String conversationId) 
+   private void destroyNestedConversationContexts(Map<String, Object> session, String conversationId)
    {
       List<ConversationEntry> entries = new ArrayList<ConversationEntry>( ConversationEntries.instance().getConversationEntries() );
       for  ( ConversationEntry ce: entries )
@@ -420,13 +426,13 @@ public class Manager
     * Look for a conversation propagation style in the request
     * parameters and begin, nest or join the conversation,
     * as necessary.
-    * 
+    *
     * @param parameters the request parameters
     */
    public void handleConversationPropagation(Map parameters)
-   {      
+   {
       ConversationPropagation propagation = ConversationPropagation.instance();
-      
+
       if (propagation.getPropagationType() == null)
       {
          return;
@@ -440,7 +446,7 @@ public class Manager
                throw new IllegalStateException("long-running conversation already active");
             }
             beginConversation();
-            
+
             if (propagation.getPageflow() != null)
             {
                Pageflow.instance().begin( propagation.getPageflow() );
@@ -450,7 +456,7 @@ public class Manager
             if ( !isLongRunningConversation )
             {
                beginConversation();
-               
+
                if (propagation.getPageflow() != null)
                {
                   Pageflow.instance().begin( propagation.getPageflow() );
@@ -458,15 +464,15 @@ public class Manager
             }
             break;
          case NEST:
-            if ( isLongRunningOrNestedConversation() ) 
+            if ( isLongRunningOrNestedConversation() )
             {
                 beginNestedConversation();
             }
-            else 
+            else
             {
                 beginConversation();
             }
-            
+
             if (propagation.getPageflow() != null)
             {
                Pageflow.instance().begin( propagation.getPageflow() );
@@ -477,18 +483,18 @@ public class Manager
             break;
       }
    }
-   
+
    /**
-    * Initialize the request conversation context, given the 
+    * Initialize the request conversation context, given the
     * conversation id and optionally a parent conversation id.
     * If no conversation entry is found for the first id, try
-    * the parent, and if that also fails, initialize a new 
+    * the parent, and if that also fails, initialize a new
     * temporary conversation context.
-    * 
+    *
     * @return false if the conversation entry was not found
     *         and it was required
     */
-   public boolean restoreConversation() 
+   public boolean restoreConversation()
    {
       ConversationPropagation cp = ConversationPropagation.instance();
       String conversationId = cp.getConversationId();
@@ -503,7 +509,7 @@ public class Manager
             ce = entries.getConversationEntry(parentConversationId);
          }
       }
-      
+
       return restoreAndLockConversation(ce) || !cp.isValidateLongRunningConversation();
    }
 
@@ -519,7 +525,7 @@ public class Manager
       }
       else if ( ce.lock() )
       {
-         // do this ASAP, since there is a window where conversationTimeout() might  
+         // do this ASAP, since there is a window where conversationTimeout() might
          // try to destroy the conversation, even if he cannot obtain the lock!
          touchConversationStack( ce.getConversationIdStack() );
 
@@ -535,15 +541,44 @@ public class Manager
             setLongRunningConversation(false);
             ce.setRemoveAfterRedirect(false);
          }
-         
+
          return true;
 
-      } 
+      }
       else
       {
          log.debug("Concurrent call to conversation");
+         // try to resolve this !
+         ConcurrentRequestResolver resolver = getConcurrentRequestResolver();
+         if (resolver!=null) {
+             HttpServletRequest request = (HttpServletRequest) FacesContext.getCurrentInstance().getExternalContext().getRequest();
+             HttpServletResponse response = (HttpServletResponse) FacesContext.getCurrentInstance().getExternalContext().getResponse();
+             if (resolver.handleConcurrentRequest(ce, request, response)) {
+                 // continue normal processing
+                 touchConversationStack( ce.getConversationIdStack() );
+                 //we found an id and obtained the lock, so restore the long-running conversation
+                 log.debug("Restoring conversation with id: " + ce.getId());
+                 setLongRunningConversation(true);
+                 setCurrentConversationId( ce.getId() );
+                 setCurrentConversationIdStack( ce.getConversationIdStack() );
+
+                 boolean removeAfterRedirect = ce.isRemoveAfterRedirect() && !Pages.isDebugPage(); //TODO: hard dependency to JSF!!
+                 if (removeAfterRedirect)
+                 {
+                    setLongRunningConversation(false);
+                    ce.setRemoveAfterRedirect(false);
+                 }
+                 return true;
+             }
+         }
+         // no resolver or no resolution
+         // fallback to default "bad" processing
          throw new ConcurrentRequestTimeoutException("Concurrent call to conversation");
       }
+   }
+
+   protected ConcurrentRequestResolver getConcurrentRequestResolver() {
+       return (ConcurrentRequestResolver) Component.getInstance(ConcurrentRequestResolver.NAME);
    }
 
    /**
@@ -567,9 +602,9 @@ public class Manager
    {
       ConversationEntry entry = ConversationEntries.instance()
             .createConversationEntry( getCurrentConversationId(), getCurrentConversationIdStack() );
-      if ( !entry.isNested() ) 
+      if ( !entry.isNested() )
       {
-         //if it is a newly created nested 
+         //if it is a newly created nested
          //conversation, we already own the
          //lock
          entry.lock();
@@ -596,7 +631,7 @@ public class Manager
    /**
     * Begin a new nested conversation.
     */
-   public void beginNestedConversation()   
+   public void beginNestedConversation()
    {
       log.debug("Beginning nested conversation");
       List<String> oldStack = getCurrentConversationIdStack();
@@ -606,13 +641,13 @@ public class Manager
       }
 
       String id = Id.nextId();
-      setCurrentConversationId(id);      
+      setCurrentConversationId(id);
       createCurrentConversationIdStack(id).addAll(oldStack);
       createConversationEntry();
       storeConversationToViewRootIfNecessary();
       if ( Events.exists() ) Events.instance().raiseEvent("org.jboss.seam.beginConversation");
    }
-   
+
    /**
     * Make a long-running conversation temporary.
     */
@@ -628,7 +663,7 @@ public class Manager
          storeConversationToViewRootIfNecessary();
       }
    }
-   
+
    /**
     * Make the root conversation in the current conversation stack temporary.
     */
@@ -638,18 +673,18 @@ public class Manager
       {
          switchConversation(getRootConversationId());
       }
-      
+
       endConversation(beforeRedirect);
    }
-   
+
    protected void storeConversationToViewRootIfNecessary() {}
 
-   // two reasons for this: 
+   // two reasons for this:
    // (1) a cache
-   // (2) so we can unlock() it after destruction of the session context 
-   private ConversationEntry currentConversationEntry; 
-   
-   public ConversationEntry getCurrentConversationEntry() 
+   // (2) so we can unlock() it after destruction of the session context
+   private ConversationEntry currentConversationEntry;
+
+   public ConversationEntry getCurrentConversationEntry()
    {
       if (currentConversationEntry==null)
       {
@@ -657,7 +692,7 @@ public class Manager
       }
       return currentConversationEntry;
    }
-   
+
    /**
     * Leave the scope of the current conversation, leaving
     * it completely intact.
@@ -670,7 +705,7 @@ public class Manager
 
    /**
     * Switch to another long-running conversation.
-    * 
+    *
     * @param id the id of the conversation to switch to
     * @return true if the conversation exists
     */
@@ -705,11 +740,11 @@ public class Manager
    public void setConversationTimeout(int conversationTimeout) {
       this.conversationTimeout = conversationTimeout;
    }
-   
+
    /**
     * Temporarily promote a temporary conversation to
     * a long running conversation for the duration of
-    * a browser redirect. After the redirect, the 
+    * a browser redirect. After the redirect, the
     * conversation will be demoted back to a temporary
     * conversation.
     */
@@ -733,10 +768,10 @@ public class Manager
    {
       return sp.getName()!=tp.getName() && ( sp.getName()==null || !sp.getName().equals( tp.getName() ) );
    }
-   
+
    /**
     * Add the conversation id to a URL, if necessary
-    * 
+    *
     * @deprecated use encodeConversationId(String url, String viewId)
     */
    public String encodeConversationId(String url)
@@ -744,29 +779,29 @@ public class Manager
       //DONT BREAK, icefaces uses this
       return encodeConversationIdParameter( url, getConversationIdParameter(), getCurrentConversationId() );
    }
-         
+
    /**
     * Add the conversation id to a URL, if necessary
     */
-   public String encodeConversationId(String url, String viewId) 
+   public String encodeConversationId(String url, String viewId)
    {
       //DONT BREAK, icefaces uses this
       ConversationIdParameter cip = Pages.instance().getPage(viewId).getConversationIdParameter();
       return encodeConversationIdParameter( url, cip.getParameterName(), cip.getParameterValue() );
    }
- 
+
    /**
     * Add the conversation id to a URL, if necessary
     */
-   public String encodeConversationId(String url, String viewId, String conversationId) 
+   public String encodeConversationId(String url, String viewId, String conversationId)
    {
       //DONT BREAK, icefaces uses this
       ConversationIdParameter cip = Pages.instance().getPage(viewId).getConversationIdParameter();
       return encodeConversationIdParameter( url, cip.getParameterName(), cip.getParameterValue(conversationId) );
    }
- 
+
    protected String encodeConversationIdParameter(String url, String paramName, String paramValue)
-   {         
+   {
       if ( Session.instance().isInvalid() || containsParameter(url, paramName) )
       {
          return url;
@@ -813,7 +848,7 @@ public class Manager
    public String encodeParameters(String url, Map<String, Object> parameters)
    {
       if ( parameters.isEmpty() ) return url;
-      
+
       StringBuilder builder = new StringBuilder(url);
       for ( Map.Entry<String, Object> param: parameters.entrySet() )
       {
@@ -846,7 +881,7 @@ public class Manager
             }
          }
       }
-      if ( url.indexOf('?')<0 ) 
+      if ( url.indexOf('?')<0 )
       {
          builder.setCharAt( url.length() ,'?' );
       }
@@ -855,7 +890,7 @@ public class Manager
 
    private boolean containsParameter(String url, String parameterName)
    {
-      return url.indexOf('?' + parameterName + '=')>0 || 
+      return url.indexOf('?' + parameterName + '=')>0 ||
             url.indexOf( '&' + parameterName + '=')>0;
    }
 
@@ -870,7 +905,7 @@ public class Manager
          throw new RuntimeException(iee);
       }
    }
-   
+
    public String getConversationIdParameter()
    {
       return conversationIdParameter;
@@ -900,12 +935,12 @@ public class Manager
    {
       this.concurrentRequestTimeout = requestWait;
    }
-   
+
    public FlushModeType getDefaultFlushMode()
    {
       return defaultFlushMode;
    }
-   
+
    public void setDefaultFlushMode(FlushModeType defaultFlushMode)
    {
       this.defaultFlushMode = defaultFlushMode;

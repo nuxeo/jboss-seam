@@ -25,7 +25,7 @@ import org.jboss.seam.util.Strings;
 /**
  * A Seam component that propagates FacesMessages across redirects
  * and interpolates EL expressions in the message string.
- * 
+ *
  * @author Gavin King
  * @author Pete Muir
  */
@@ -35,11 +35,13 @@ import org.jboss.seam.util.Strings;
 @BypassInterceptors
 public class FacesMessages extends StatusMessages
 {
-   
-   /**
+
+   private static final String NX_TRANSIENT_MESSAGES = "org.seam.transient.messages.nx";
+
+/**
     * Called by Seam to transfer messages from FacesMessages to JSF
     */
-   public void beforeRenderResponse() 
+   public void beforeRenderResponse()
    {
       for (StatusMessage statusMessage: getMessages())
       {
@@ -53,20 +55,56 @@ public class FacesMessages extends StatusMessages
             FacesContext.getCurrentInstance().addMessage( clientId, toFacesMessage(statusMessage) );
          }
       }
+      for (StatusMessage statusMessage: getTransientMessages())
+      {
+          if (statusMessage!=null) {
+              FacesContext.getCurrentInstance().addMessage( null, toFacesMessage(statusMessage) );
+          } else {
+              System.out.println("NULL MSG !!!!");
+          }
+      }
+
       clear();
    }
-   
+
+   public static void addTransientMessage(StatusMessage statusMessage) {
+       if (Contexts.isSessionContextActive()) {
+           List<StatusMessage> msgs = (List<StatusMessage>) Contexts.getSessionContext().get(NX_TRANSIENT_MESSAGES);
+           if (msgs==null) {
+               msgs = new ArrayList<StatusMessage>();
+               Contexts.getSessionContext().set(NX_TRANSIENT_MESSAGES, msgs);
+           }
+           msgs.add(statusMessage);
+       }
+   }
+
+   public static List<StatusMessage>  getTransientMessages() {
+       List<StatusMessage> msgs = null;
+       if (Contexts.isSessionContextActive()) {
+           msgs = (List<StatusMessage>) Contexts.getSessionContext().get(NX_TRANSIENT_MESSAGES);
+           Contexts.getSessionContext().remove(NX_TRANSIENT_MESSAGES);
+       }
+       if (msgs ==null) {
+           msgs = new ArrayList<StatusMessage>();
+       } else {
+           for (StatusMessage msg : msgs) {
+               msg.interpolate(null);
+           }
+       }
+       return msgs;
+   }
+
    /**
     * Called by Seam to transfer any messages added in the phase just processed
     * to the FacesMessages component.
-    * 
+    *
     * A task runner is used to allow the messages access to outjected values.
     */
    public static void afterPhase()
    {
       runTasks();
    }
-   
+
    /**
     * Convert a StatusMessage to a FacesMessage
     */
@@ -81,7 +119,7 @@ public class FacesMessages extends StatusMessages
          return null;
       }
    }
-   
+
    /**
     * Convert a StatusMessage.Severity to a FacesMessage.Severity
     */
@@ -101,7 +139,7 @@ public class FacesMessages extends StatusMessages
          return null;
       }
    }
-   
+
    /**
     * Convert a FacesMessage.Severity to a StatusMessage.Severity
     */
@@ -128,7 +166,7 @@ public class FacesMessages extends StatusMessages
          return null;
       }
    }
-   
+
    /**
     * Calculate the JSF client ID from the provided widget ID
     */
@@ -157,11 +195,11 @@ public class FacesMessages extends StatusMessages
          return null;
       }
    }
-   
+
    /**
     * Get all faces messages that have already been added
     * to the context.
-    * 
+    *
     */
    public List<FacesMessage> getCurrentMessages()
    {
@@ -173,11 +211,11 @@ public class FacesMessages extends StatusMessages
       }
       return result;
    }
-   
+
    /**
     * Get all faces global messages that have already been added
     * to the context.
-    * 
+    *
     */
    public List<FacesMessage> getCurrentGlobalMessages()
    {
@@ -189,11 +227,11 @@ public class FacesMessages extends StatusMessages
       }
       return result;
    }
-   
+
    /**
     * Get all faces messages that have already been added
     * to the control.
-    * 
+    *
     */
    public List<FacesMessage> getCurrentMessagesForControl(String id)
    {
@@ -206,22 +244,22 @@ public class FacesMessages extends StatusMessages
       }
       return result;
    }
-   
+
    /**
-    * Utility method to create a FacesMessage from a Severity, messageTemplate 
+    * Utility method to create a FacesMessage from a Severity, messageTemplate
     * and params.
-    * 
+    *
     * This method interpolates the parameters provided
     */
    public static FacesMessage createFacesMessage(javax.faces.application.FacesMessage.Severity severity, String messageTemplate, Object... params)
    {
       return createFacesMessage(severity, null, messageTemplate, params);
    }
-   
+
    /**
-    * Utility method to create a FacesMessage from a Severity, key, 
+    * Utility method to create a FacesMessage from a Severity, key,
     * defaultMessageTemplate and params.
-    * 
+    *
     * This method interpolates the parameters provided
     */
    public static FacesMessage createFacesMessage(javax.faces.application.FacesMessage.Severity severity, String key, String defaultMessageTemplate, Object... params)
@@ -230,28 +268,28 @@ public class FacesMessages extends StatusMessages
       message.interpolate(params);
       return toFacesMessage(message);
    }
-   
+
    /**
     * Add a FacesMessage that will be used
     * the next time a page is rendered.
-    * 
+    *
     * Deprecated, use a method in {@link StatusMessages} instead
     */
    @Deprecated
-   public void add(FacesMessage facesMessage) 
+   public void add(FacesMessage facesMessage)
    {
       if (facesMessage!=null)
       {
          add(toSeverity(facesMessage.getSeverity()), null, null, facesMessage.getSummary(), facesMessage.getDetail());
       }
    }
-   
+
    /**
     * Create a new status message, with the messageTemplate is as the message.
-    * 
+    *
     * You can also specify the severity, and parameters to be interpolated
-    * 
-    * Deprecated, use {@link #add(org.jboss.seam.international.StatusMessage.Severity, String, Object...)} 
+    *
+    * Deprecated, use {@link #add(org.jboss.seam.international.StatusMessage.Severity, String, Object...)}
     * instead
     */
    @Deprecated
@@ -259,14 +297,14 @@ public class FacesMessages extends StatusMessages
    {
       add(toSeverity(severity), messageTemplate, params);
    }
-   
-   
+
+
    /**
     * Create a new status message, with the messageTemplate is as the message.
     *
     * A severity of INFO will be used, and you can specify paramters to be
     * interpolated
-    * 
+    *
     * Deprecated, use {@link #addToControl(String, org.jboss.seam.international.StatusMessage.Severity, String, Object...)}
     * instead
     */
@@ -275,13 +313,13 @@ public class FacesMessages extends StatusMessages
    {
       addToControl(id, toSeverity(severity), messageTemplate, params);
    }
-   
+
    /**
     * Add a status message, looking up the message in the resource bundle
     * using the provided key.
-    * 
+    *
     * You can also specify the severity, and parameters to be interpolated
-    * 
+    *
     * Deprecated, use {@link #addFromResourceBundle(org.jboss.seam.international.StatusMessage.Severity, String, Object...)}
     * instead
     */
@@ -290,13 +328,13 @@ public class FacesMessages extends StatusMessages
    {
       addFromResourceBundle(toSeverity(severity), key, params);
    }
-   
+
    /**
     * Add a status message, looking up the message in the resource bundle
     * using the provided key.
-    * 
+    *
     * You can also specify the severity, and parameters to be interpolated
-    * 
+    *
     * Deprecated, use {@link #addFromResourceBundleOrDefault(javax.faces.application.FacesMessage.Severity, String, String, Object...)}
     * instead
     */
@@ -305,17 +343,17 @@ public class FacesMessages extends StatusMessages
    {
       addFromResourceBundleOrDefault(toSeverity(severity), key, defaultMessageTemplate, params);
    }
-   
+
    /**
     * Create a new status message, looking up the message in the resource bundle
     * using the provided key.
-    * 
+    *
     * The message will be added to the widget specified by the ID. The algorithm
-    * used determine which widget the id refers to is determined by the view 
+    * used determine which widget the id refers to is determined by the view
     * layer implementation in use.
-    * 
+    *
     * You can also specify the severity, and parameters to be interpolated
-    * 
+    *
     * Deprecated, use {@link #addToControlFromResourceBundle(String, org.jboss.seam.international.StatusMessage.Severity, String, Object...)}
     * instead
     */
@@ -324,18 +362,18 @@ public class FacesMessages extends StatusMessages
    {
       addToControlFromResourceBundle(id, toSeverity(severity), key, params);
    }
-   
+
    /**
     * Add a status message, looking up the message in the resource bundle
-    * using the provided key. If the message is found, it is used, otherwise, 
+    * using the provided key. If the message is found, it is used, otherwise,
     * the defaultMessageTemplate will be used.
-    * 
+    *
     * The message will be added to the widget specified by the ID. The algorithm
-    * used determine which widget the id refers to is determined by the view 
+    * used determine which widget the id refers to is determined by the view
     * layer implementation in use.
-    * 
+    *
     * You can also specify the severity, and parameters to be interpolated
-    * 
+    *
     * Deprecated, use {@link #addToControlFromResourceBundleOrDefault(String, org.jboss.seam.international.StatusMessage.Severity, String, String, Object...)}
     * instead
     */
@@ -344,7 +382,7 @@ public class FacesMessages extends StatusMessages
    {
       addToControlFromResourceBundleOrDefault(id, toSeverity(severity), key, defaultMessageTemplate, params);
    }
-   
+
    public static FacesMessages instance()
    {
       if ( !Contexts.isConversationContextActive() )

@@ -21,7 +21,9 @@ import javax.faces.event.PhaseEvent;
 import javax.faces.event.PhaseId;
 import javax.faces.event.PhaseListener;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
+import org.jboss.seam.ConcurrentRequestTimeoutException;
 import org.jboss.seam.Seam;
 import org.jboss.seam.contexts.Context;
 import org.jboss.seam.contexts.Contexts;
@@ -193,6 +195,14 @@ public class SeamPhaseListener implements PhaseListener
          {
             afterServletPhase(event);
          }
+      }
+      catch (ConcurrentRequestTimeoutException ccre) {
+          //HttpServletResponse response = (HttpServletResponse) event.getFacesContext().getExternalContext().getResponse();
+          //response.setStatus(204);
+
+          //event.getFacesContext().responseComplete();
+          System.out.println("XXX Stoping request !");
+          return;
       }
       catch (Exception e)
       {
