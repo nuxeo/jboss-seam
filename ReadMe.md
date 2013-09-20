@@ -9,10 +9,19 @@ Better manage Seam conversation concurrency : [NXP-12487](https://jira.nuxeo.com
 
 ## Build eclipse project 
 
-      mvn  -f build/core.pom.xml  --settings build/ci.settings.xml  eclipse:eclipse
+    mvn -f build/core.pom.xml --settings build/ci.settings.xml eclipse:eclipse
 
-## Build Seam Core
+## Seam Core
 
-      ant build
+### Build
 
+    ant build
 
+### Deploy
+
+    mvn org.apache.maven.plugins:maven-deploy-plugin:2.7:deploy-file \
+        -Durl=https://maven-eu.nuxeo.org/nexus/content/repositories/vendor-snapshots \
+        -DrepositoryId=vendor-snapshots \
+        -Dfile=./lib/jboss-seam.jar \
+        -DpomFile=./classes/poms/core.wls.pom \
+        -Dsources=./lib/src/jboss-seam-sources.jar
