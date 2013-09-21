@@ -2315,8 +2315,17 @@ public class Component extends Model
       }
    }
 
+   protected static ServiceProvider extensionServiceProvider = null;
+
+   protected static ServiceProvider getServiceProvider() {
+       if (extensionServiceProvider==null) {
+           extensionServiceProvider = (ServiceProvider) Component.getInstance(ServiceProvider.NAME);
+       }
+       return extensionServiceProvider;
+   }
+
    public static Object getExtensionService(String name, Class klass, boolean create) {
-       ServiceProvider sp = (ServiceProvider) Component.getInstance(ServiceProvider.NAME);
+       ServiceProvider sp = getServiceProvider();
        if (sp!=null) {
            if ( log.isDebugEnabled() )
            {
