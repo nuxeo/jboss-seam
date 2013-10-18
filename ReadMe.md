@@ -19,9 +19,4 @@ Better manage Seam conversation concurrency : [NXP-12487](https://jira.nuxeo.com
 
 ### Deploy
 
-    mvn org.apache.maven.plugins:maven-deploy-plugin:2.7:deploy-file \
-        -Durl=https://maven-eu.nuxeo.org/nexus/content/repositories/vendor-snapshots \
-        -DrepositoryId=vendor-snapshots \
-        -Dfile=./lib/jboss-seam.jar \
-        -DpomFile=./classes/poms/core.wls.pom \
-        -Dsources=./lib/src/jboss-seam-sources.jar
+    ./mvndep.sh [release]
