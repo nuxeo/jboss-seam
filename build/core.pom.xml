@@ -6,7 +6,7 @@
   <groupId>org.jboss.seam</groupId>
   <artifactId>jboss-seam</artifactId>
   <!--<artifactId>@artifact.name@</artifactId>-->
-  <version>2.1.0.SP1-NX2-SNAPSHOT</version>
+  <version>2.1.0.SP1-NX2</version>
   <parent>
     <groupId>org.jboss.seam</groupId>
     <artifactId>parent</artifactId>
