@@ -21,9 +21,7 @@ import javax.faces.event.PhaseEvent;
 import javax.faces.event.PhaseId;
 import javax.faces.event.PhaseListener;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
-import org.jboss.seam.ConcurrentRequestTimeoutException;
 import org.jboss.seam.Seam;
 import org.jboss.seam.contexts.Context;
 import org.jboss.seam.contexts.Contexts;
@@ -446,14 +444,15 @@ public class SeamPhaseListener implements PhaseListener
       {
          if ( Transaction.instance().isRolledBackOrMarkedRollback() )
          {
-            // NXP-12483 : only add the default message if none was already set
-            if (FacesMessages.instance().getCurrentMessages().size()==0) {
-                FacesMessages.instance().addFromResourceBundleOrDefault(
+             // NXP-12483 + VEND-13: only add the default message if none was
+             // already set
+             if (FacesMessages.instance().getCurrentMessages().size() == 0
+                     && FacesMessages.instance().getLocalMessages().size() == 0) {
+                 FacesMessages.instance().addFromResourceBundleOrDefault(
                          StatusMessage.Severity.WARN,
                          "org.jboss.seam.TransactionFailed",
-                         "Transaction failed"
-                      );
-            }
+                         "Transaction failed");
+             }
          }
       }
       catch (Exception e) {} //swallow silently, not important

@@ -197,6 +197,17 @@ public class FacesMessages extends StatusMessages
    }
 
    /**
+    * Returns all temporary messages that have not been pushed yet to the
+    * FacesContext, see VEND-13.
+    *
+    * @since 2.1.0.SP1-NX3
+    */
+   public List<StatusMessage> getLocalMessages()
+   {
+      return getMessages();
+   }
+
+   /**
     * Get all faces messages that have already been added
     * to the context.
     *
