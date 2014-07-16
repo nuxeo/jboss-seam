@@ -2056,6 +2056,11 @@ public class Component extends Model
          }
       }
 
+      // lookup in Nuxeo provider
+      if (result == null && component == null && !ServiceProvider.NAME.equals(name)) {
+          result = getExtensionService(name, null, create);
+      }
+
       return result;
 
    }
