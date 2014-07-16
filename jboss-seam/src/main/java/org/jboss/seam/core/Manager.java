@@ -38,6 +38,7 @@ import org.jboss.seam.navigation.ConversationIdParameter;
 import org.jboss.seam.navigation.Pages;
 import org.jboss.seam.pageflow.Pageflow;
 import org.jboss.seam.util.Id;
+import org.jboss.seam.web.ServletContexts;
 import org.jboss.seam.web.Session;
 
 /**
@@ -651,9 +652,17 @@ public class Manager
           ConcurrentRequestResolver resolver = getConcurrentRequestResolver();
           if (resolver != null) {
               log.info("Using " + resolver.getClass().getCanonicalName() + " to resolve concurrent call");
-              ExternalContext ec = FacesContext.getCurrentInstance().getExternalContext();
-              HttpServletRequest request = (HttpServletRequest) ec.getRequest();
-              HttpServletResponse response = (HttpServletResponse) ec.getResponse();
+              HttpServletRequest request = null;
+              HttpServletResponse response = null;
+              FacesContext faces = FacesContext.getCurrentInstance();
+              if (faces != null) {
+                  // in non JSF context, Seam can not fetch the Request
+                  ExternalContext ec = faces.getExternalContext();
+                  request = (HttpServletRequest) ec.getRequest();
+                  response = (HttpServletResponse) ec.getResponse();
+              } else if (ServletContexts.instance() != null) {
+                  request = ServletContexts.instance().getRequest();
+              }
               if (resolver.handleConcurrentRequest(ce, request, response)) {
                   // continue normal processing
                   touchConversationStack( ce.getConversationIdStack() );
