@@ -95,6 +95,7 @@ import org.jboss.seam.core.Init;
 import org.jboss.seam.core.Mutable;
 import org.jboss.seam.core.Expressions.MethodExpression;
 import org.jboss.seam.core.Expressions.ValueExpression;
+import org.jboss.seam.core.providers.ServiceProvider;
 import org.jboss.seam.databinding.DataBinder;
 import org.jboss.seam.databinding.DataSelector;
 import org.jboss.seam.ejb.SeamInterceptor;
@@ -1740,7 +1741,7 @@ public class Component extends Model
    {
       for ( BijectedAttribute<In> att : getInAttributes() )
       {
-         att.set( bean, getValueToInject( att.getAnnotation(), att.getName(), bean, enforceRequired ) );
+         att.set( bean, getValueToInject( att.getAnnotation(), att.getName(), bean, enforceRequired, att.getType() ) );
       }
    }
 
@@ -2344,7 +2345,7 @@ public class Component extends Model
       }
    }
 
-   private Object getValueToInject(In in, String name, Object bean, boolean enforceRequired)
+   private Object getValueToInject(In in, String name, Object bean, boolean enforceRequired, Class klass)
    {
       Object result;
       if ( name.startsWith("#") )
@@ -2395,6 +2396,11 @@ public class Component extends Model
          }
       }
 
+      // Nuxeo patch for service injection
+      if (result == null) {
+          result = getExtensionService(name, klass, in.create());
+      }
+
       if ( result==null && enforceRequired && in.required() )
       {
          throw new RequiredException(
@@ -2406,6 +2412,21 @@ public class Component extends Model
       {
          return result;
       }
+   }
+
+   protected static Object getExtensionService(String name, Class klass, boolean create) {
+       ServiceProvider sp = (ServiceProvider) Component.getInstance(ServiceProvider.NAME);
+       if (sp!=null) {
+           if (log.isDebugEnabled()) {
+               log.debug("Service provider found with implementation " + sp.getClass());
+           }
+           return sp.lookup(name, klass, create);
+       } else {
+           if (log.isDebugEnabled()) {
+               log.debug("No extension Service provider found with implementation ");
+           }
+       }
+       return null;
    }
 
    private Object getInstanceInAllNamespaces(String name, boolean create, boolean allowAutocreation)
