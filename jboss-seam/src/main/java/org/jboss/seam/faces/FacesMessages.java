@@ -17,6 +17,7 @@ import org.jboss.seam.annotations.Install;
 import org.jboss.seam.annotations.Name;
 import org.jboss.seam.annotations.Scope;
 import org.jboss.seam.annotations.intercept.BypassInterceptors;
+import org.jboss.seam.contexts.Contexts;
 import org.jboss.seam.international.StatusMessage;
 import org.jboss.seam.international.StatusMessages;
 import org.jboss.seam.util.Strings;
@@ -35,6 +36,8 @@ import org.jboss.seam.util.Strings;
 public class FacesMessages extends StatusMessages
 {
 
+   private static final String NX_TRANSIENT_MESSAGES = "org.seam.transient.messages.nx";
+
    /**
     * Called by Seam to transfer messages from FacesMessages to JSF
     */
@@ -52,7 +55,43 @@ public class FacesMessages extends StatusMessages
             FacesContext.getCurrentInstance().addMessage( clientId, toFacesMessage(statusMessage) );
          }
       }
+      for (StatusMessage statusMessage: getTransientMessages())
+      {
+          if (statusMessage != null) {
+              FacesContext.getCurrentInstance().addMessage( null, toFacesMessage(statusMessage) );
+          }
+      }
+
       clear();
+   }
+
+   // Nuxeo helper method for concurrent requests management
+   public static void addTransientMessage(StatusMessage statusMessage) {
+       if (Contexts.isSessionContextActive()) {
+           List<StatusMessage> msgs = (List<StatusMessage>) Contexts.getSessionContext().get(NX_TRANSIENT_MESSAGES);
+           if (msgs == null) {
+               msgs = new ArrayList<StatusMessage>();
+               Contexts.getSessionContext().set(NX_TRANSIENT_MESSAGES, msgs);
+           }
+           msgs.add(statusMessage);
+       }
+   }
+
+   // Nuxeo helper method for concurrent requests management
+   public static List<StatusMessage>  getTransientMessages() {
+       List<StatusMessage> msgs = null;
+       if (Contexts.isSessionContextActive()) {
+           msgs = (List<StatusMessage>) Contexts.getSessionContext().get(NX_TRANSIENT_MESSAGES);
+           Contexts.getSessionContext().remove(NX_TRANSIENT_MESSAGES);
+       }
+       if (msgs == null) {
+           msgs = new ArrayList<StatusMessage>();
+       } else {
+           for (StatusMessage msg : msgs) {
+               msg.interpolate(null);
+           }
+       }
+       return msgs;
    }
 
    /**

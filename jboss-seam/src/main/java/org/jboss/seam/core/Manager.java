@@ -16,6 +16,11 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 
+import javax.faces.context.ExternalContext;
+import javax.faces.context.FacesContext;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.jboss.seam.Component;
 import org.jboss.seam.ConcurrentRequestTimeoutException;
 import org.jboss.seam.ScopeType;
@@ -26,6 +31,7 @@ import org.jboss.seam.annotations.Scope;
 import org.jboss.seam.annotations.intercept.BypassInterceptors;
 import org.jboss.seam.contexts.Contexts;
 import org.jboss.seam.contexts.Lifecycle;
+import org.jboss.seam.jsf.concurrency.ConcurrentRequestResolver;
 import org.jboss.seam.log.LogProvider;
 import org.jboss.seam.log.Logging;
 import org.jboss.seam.navigation.ConversationIdParameter;
@@ -640,9 +646,42 @@ public class Manager
       }
       else
       {
-         log.debug("Concurrent call to conversation");
-         throw new ConcurrentRequestTimeoutException("Concurrent call to conversation");
+          log.info("Concurrent call to conversation");
+          // try to resolve concurrency
+          ConcurrentRequestResolver resolver = getConcurrentRequestResolver();
+          if (resolver != null) {
+              log.info("Using " + resolver.getClass().getCanonicalName() + " to resolve concurrent call");
+              ExternalContext ec = FacesContext.getCurrentInstance().getExternalContext();
+              HttpServletRequest request = (HttpServletRequest) ec.getRequest();
+              HttpServletResponse response = (HttpServletResponse) ec.getResponse();
+              if (resolver.handleConcurrentRequest(ce, request, response)) {
+                  // continue normal processing
+                  touchConversationStack( ce.getConversationIdStack() );
+                  // we found an id and obtained the lock, so restore the long-running conversation
+                  log.debug("Restoring conversation with id: " + ce.getId());
+                  setLongRunningConversation(true);
+                  setCurrentConversationId( ce.getId() );
+                  setCurrentConversationIdStack( ce.getConversationIdStack() );
+
+                  boolean removeAfterRedirect = ce.isRemoveAfterRedirect() && !Pages.isDebugPage(); //XXX: hard dependency to JSF!!
+                  if (removeAfterRedirect) {
+                      setLongRunningConversation(false);
+                      ce.setRemoveAfterRedirect(false);
+                  }
+                  return true;
+              }
+          }
+          // no resolver or no resolution => fallback to default "bad" processing
+          log.info("No resolved of no resolution found: fallback on standard Seam handling, raising ConcurrentRequestTimeoutException");
+          throw new ConcurrentRequestTimeoutException("Concurrent call to conversation");
       }
+   }
+
+   /**
+    * Method added for Nuxeo resolution of concurrent requests.
+    */
+   protected ConcurrentRequestResolver getConcurrentRequestResolver() {
+       return (ConcurrentRequestResolver) Component.getInstance(ConcurrentRequestResolver.NAME);
    }
 
    /**
