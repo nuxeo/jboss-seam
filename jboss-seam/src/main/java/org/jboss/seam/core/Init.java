@@ -58,19 +58,19 @@ public class Init
          AsynchronousInterceptor.class.getName(),
          RemoveInterceptor.class.getName(),
          HibernateSessionProxyInterceptor.class.getName(),
-         EntityManagerProxyInterceptor.class.getName(),
+         //EntityManagerProxyInterceptor.class.getName(),
          MethodContextInterceptor.class.getName(),
          EventInterceptor.class.getName(),
          ConversationalInterceptor.class.getName(),
-         BusinessProcessInterceptor.class.getName(),
+         //BusinessProcessInterceptor.class.getName(),
          ConversationInterceptor.class.getName(),
          BijectionInterceptor.class.getName(),
          RollbackInterceptor.class.getName(),
-         TransactionInterceptor.class.getName(),
-         WSSecurityInterceptor.class.getName(),
-         SecurityInterceptor.class.getName()
-         )); 
-   
+         TransactionInterceptor.class.getName()
+         //WSSecurityInterceptor.class.getName(),
+         //SecurityInterceptor.class.getName()
+         ));
+
    private LogProvider log = Logging.getLogProvider(Init.class);
    
    private Namespace rootNamespace = new Namespace(null);
