@@ -197,6 +197,17 @@ public class FacesMessages extends StatusMessages
    }
 
    /**
+    * Nuxeo patch: returns all temporary messages that have not been pushed
+    * yet to the FacesContext, see VEND-13.
+    *
+    * @since 2.3.1.Final.NX01
+    */
+    public List<StatusMessage> getLocalMessages()
+    {
+        return getMessages();
+    }
+
+   /**
     * Get all faces messages that have already been added
     * to the context.
     *
