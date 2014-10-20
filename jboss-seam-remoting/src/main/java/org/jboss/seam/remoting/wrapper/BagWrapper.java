@@ -14,7 +14,6 @@ import java.util.Queue;
 import java.util.Set;
 
 import org.dom4j.Element;
-import org.hibernate.collection.spi.PersistentCollection;
 
 /**
  * Wrapper for collections, arrays, etc.
@@ -33,15 +32,7 @@ public class BagWrapper extends BaseWrapper implements Wrapper
   {
     out.write(BAG_TAG_OPEN);
 
-    // Fix to prevent uninitialized lazy loading in Hibernate
-    if (value instanceof PersistentCollection)
-    {
-      if (!((PersistentCollection) value).wasInitialized())
-      {
-        out.write(BAG_TAG_CLOSE);
-        return;
-      }
-    }
+    // Nuxeo patch: removed check on hibernate PersistentCollection, see VEND-19
 
     Collection vals = null;
 
