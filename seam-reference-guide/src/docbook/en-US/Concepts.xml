@@ -1042,6 +1042,17 @@ public Order createOrder(User user, Product product, int quantity) {
             either way, except for entity bean components which require the <literal>log</literal> variable to be
             static.
         </para>
+        
+        <warning>
+            <para>This is safe if used as intended, because all user-provided input is bound to a parameter 
+            in the EL statement. If an application does not use the Seam logging facility as intended,
+             and includes user-provided strings in log messages directly via string concatenation, 
+             then a remote attacker could inject EL statements directly into the log messages, 
+             which would be evaluated on the server. 
+             This could lead to a variety of security impacts. 
+             To protect against this issue, ensure that all user-provided input in log messages is bound to a parameter,
+              and not included directly in log messages using string concatenation</para>
+        </warning>
 
         <para> 
             Note that we don't need the noisy <literal>if ( log.isDebugEnabled() )</literal> guard, since string
