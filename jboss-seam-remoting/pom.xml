@@ -7,7 +7,7 @@
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 	
-	<version>2.3.1.Final.NX02-SNAPSHOT</version>
+	<version>2.3.1.Final.NX02</version>
 	<artifactId>jboss-seam-remoting</artifactId>
 	<name>Seam Remoting</name>
 	
