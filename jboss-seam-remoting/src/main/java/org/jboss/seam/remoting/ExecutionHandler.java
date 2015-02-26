@@ -21,6 +21,7 @@ import org.jboss.seam.log.LogProvider;
 import org.jboss.seam.log.Logging;
 import org.jboss.seam.remoting.wrapper.Wrapper;
 import org.jboss.seam.servlet.ContextualHttpServletRequest;
+import org.jboss.seam.util.XML;
 
 /**
  * Unmarshals the calls from an HttpServletRequest, executes them in order and
@@ -67,7 +68,7 @@ public class ExecutionHandler extends BaseRequestHandler implements RequestHandl
       log.debug("Processing remote request: " + requestData);
       
       // Parse the incoming request as XML
-      SAXReader xmlReader = new SAXReader();
+      SAXReader xmlReader = XML.getSafeSaxReader();
       Document doc = xmlReader.read( new StringReader(requestData) );
       final Element env = doc.getRootElement();
       final RequestContext ctx = unmarshalContext(env);
