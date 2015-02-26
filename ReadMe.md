@@ -27,3 +27,4 @@ Nuxeo changes on this version are listed there for each released version, for in
 ### Change version
 
      vi build/core.pom.xml
+     vi build/remoting.pom.xml
