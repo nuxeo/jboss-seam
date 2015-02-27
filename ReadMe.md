@@ -1,20 +1,18 @@
 
-Custom Seam build for Nuxeo based on version 2.1.0.SP1
+Custom Seam build for Nuxeo based on version 2.1.0.SP1.
+
+Usual Nuxeo maintenance branch for this version is on master, this
+branch is used for fixes against 2.1.0.SP1, without further changes to
+sync with Nuxeo code.
 
 ## Nuxeo changes
 
 Changes are done using the [VEND JIRA project](https://jira.nuxeo.com/browse/VEND) and component "Seam".
-Nuxeo changes on this version are listed there for each released version, for instance:
+Nuxeo changes on this version are listed there for each released version, for instance.
 
-- [2.1.0.SP1-NX1](https://jira.nuxeo.com/browse/VEND/fixforversion/16241)
-- [2.1.0.SP1-NX2](https://jira.nuxeo.com/browse/VEND/fixforversion/16242)
-- [2.1.0.SP1-NX3](https://jira.nuxeo.com/browse/VEND/fixforversion/16243)
+Versions on this branch will concern jboss-seam-remoting only.
 
-## Build eclipse project 
-
-    mvn -f build/core.pom.xml --settings build/ci.settings.xml eclipse:eclipse
-
-## Seam Core
+## Seam Remoting
 
 ### Build
 
@@ -26,5 +24,4 @@ Nuxeo changes on this version are listed there for each released version, for in
 
 ### Change version
 
-     vi build/core.pom.xml
      vi build/remoting.pom.xml
