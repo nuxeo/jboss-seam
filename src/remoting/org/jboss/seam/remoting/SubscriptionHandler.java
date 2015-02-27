@@ -41,7 +41,7 @@ public class SubscriptionHandler extends BaseRequestHandler implements RequestHa
     response.setContentType("text/xml");
 
     // Parse the incoming request as XML
-    SAXReader xmlReader = XML.getSafeSaxReader();
+    SAXReader xmlReader = XMLRemoting.getSafeSaxReader();
     Document doc = xmlReader.read(request.getInputStream());
     Element env = doc.getRootElement();
 
