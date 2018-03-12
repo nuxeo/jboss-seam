@@ -673,49 +673,7 @@ public class Pages
    @SuppressWarnings("deprecation")
    private static boolean callAction(FacesContext facesContext)
    {
-      //TODO: refactor with Pages.instance().callAction()!!
-      
-      boolean result = false;
-      
-      String outcome = facesContext.getExternalContext()
-            .getRequestParameterMap().get("actionOutcome");
-      String fromAction = outcome;
-
-      String decodedOutcome = null;
-      if (outcome != null)
-      {
-         decodedOutcome = URLDecoder.decode(outcome);
-      }
-
-      if (decodedOutcome != null && (decodedOutcome.indexOf('#') >= 0 || decodedOutcome.indexOf('{') >= 0) ){
-         throw new IllegalArgumentException("EL expressions are not allowed in actionOutcome parameter");
-      }
-      
-      if (outcome==null)
-      {
-         String actionId = facesContext.getExternalContext()
-               .getRequestParameterMap().get("actionMethod");
-         if (actionId!=null)
-         {
-            String decodedActionId = URLDecoder.decode(actionId);
-            if (decodedActionId != null && (decodedActionId.indexOf('#') >= 0 || decodedActionId.indexOf('{') >= 0) ){
-               throw new IllegalArgumentException("EL expressions are not allowed in actionMethod parameter");
-            }
-            if ( !SafeActions.instance().isActionSafe(actionId) ) return result;
-            String expression = SafeActions.toAction(actionId);
-            result = true;
-            MethodExpression actionExpression = Expressions.instance().createMethodExpression(expression);
-            outcome = toString( actionExpression.invoke() );
-            fromAction = expression;
-            handleOutcome(facesContext, outcome, fromAction);
-         }
-      }
-      else
-      {
-         handleOutcome(facesContext, outcome, fromAction);
-      }
-      
-      return result;
+      return false;
    }
    
    /**
